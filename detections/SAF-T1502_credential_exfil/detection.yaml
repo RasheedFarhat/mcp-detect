@@ -1,0 +1,53 @@
+{
+  "technique_id": "SAF-T1502",
+  "name": "credential_exfil",
+  "detection_type": "structural",
+  "status": "deployed",
+  "mitre_attack_ids": ["T1552.001", "T1041"],
+  "mitre_atlas_ids": [],
+  "owasp_mcp": ["MCP01", "MCP10"],
+  "description": "Credential exfiltration via a two-hop attack: a read hop (SAF-T1502, sensitive-file read via tool_arguments.path) and an exfil hop (SAF-T1910, secret-shaped content in a tool call argument). Bundled as one Detection per docs/PHASE6-MIGRATION-REPORT.md's disclosed judgment call -- STATE-OF-PROJECT.md's own coverage map and docs/PHASE4-REPORT.md's own heading already treat these as one scenario ('Credential exfiltration (SAF-T1502 read hop + SAF-T1910 exfil hop)') despite two MITRE techniques and six rule ids. technique_id names the read-hop (SAF-T1502) as primary; SAF-T1910 (exfil hop) is the second mitre_attack_ids entry (T1041), not a second technique_id, since the v2 schema's technique_id field is singular. Migrated verbatim from wazuh/local_rules.xml rules 100101, 100103-100107 -- zero XML changes.",
+  "backends": [
+    {
+      "backend": "wazuh_rule",
+      "label": "read_hop",
+      "logic_ref": {
+        "wazuh_rule_ids": ["100101"],
+        "rule_file": "wazuh/local_rules.xml"
+      },
+      "consumes": "raw_telemetry",
+      "parent_rule": "100100"
+    },
+    {
+      "backend": "wazuh_rule",
+      "label": "exfil_hop",
+      "logic_ref": {
+        "wazuh_rule_ids": ["100103", "100104", "100105", "100106", "100107"],
+        "rule_file": "wazuh/local_rules.xml"
+      },
+      "consumes": "raw_telemetry",
+      "parent_rule": "100100"
+    }
+  ],
+  "pipeline": "parallel",
+  "expected_signal": {
+    "record_type": "tools/call",
+    "fields": ["tool_arguments.path", "tool_arguments.data", "tool_arguments.payload", "tool_arguments.content", "tool_arguments.body", "tool_arguments.message"]
+  },
+  "session_key": {
+    "primary_field": "session_id",
+    "related_fields": []
+  },
+  "fixtures": {
+    "attack_corpus": "live:telemetry#label=malicious&scenario_id=credential_exfil_via_read",
+    "benign_denominator": "data/benign_corpus_v2.jsonl#tool_call_events",
+    "evasion_corpus": "data/evasion_corpus_v1.jsonl#task_id~=attack_evasion_e5_toolname_spoof,attack_evasion_e6_untested_key,attack_evasion_e7_secret_shape,attack_evasion_e8_encoded_payload,attack_evasion_e9_read_path"
+  },
+  "known_gaps": [
+    "Tool-name spoofing evades the exfil-hop negate-list (E5) -- confirmed structurally unfixable inside Wazuh's classic rule DSL (negate-on-absent-field gate)",
+    "6th, untested argument key name evades the exfil-hop family by construction (E6) -- Wazuh has no wildcard-field-name match",
+    "Secret formats outside the 6 named shapes evade the exfil-hop regex (E7)",
+    "Base64-encoded payload evades the exfil-hop literal-string match (E8)",
+    "Renamed read path (e.g. .env.bak) evades the read-hop rule specifically (E9) -- exfil-hop signal (100103-107) still catches the attack overall if the content is later exfiltrated unencoded"
+  ]
+}

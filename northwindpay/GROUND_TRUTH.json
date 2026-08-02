@@ -1,0 +1,129 @@
+{
+  "schema_version": "northwindpay-ground-truth-v1",
+  "environment": "NorthwindPay (fictional mid-size fintech) synthetic telemetry -- sealed manifest, MUST NOT be read by the assessment run under test.",
+  "capture_window": {
+    "start": "2026-06-01T13:00:00.000Z",
+    "end": "2026-06-02T02:45:42.450Z"
+  },
+  "record_count": 4046,
+  "session_count": 538,
+  "server_count": 12,
+  "known_good_bom_path": "northwindpay/known_good_bom.json",
+  "telemetry_path": "northwindpay/telemetry.jsonl",
+  "class_a_detectable": [
+    {
+      "id": "A5_path_traversal",
+      "session_id": "ae0b1a8b-36c7-fa55-b72a-f2b88c921425",
+      "server_command": "npx -y @modelcontextprotocol/server-filesystem@2026.7.4 /app/workspace",
+      "expected_technique_id": "SAF-T1105",
+      "expected_rule_id": "100108",
+      "detail": "read_text_file path='../../../etc/hosts' -- traversal outside workspace root"
+    },
+    {
+      "id": "A3_poisoned_tool_description",
+      "session_id": "99808772-f8a4-c920-1db4-51924c0a4304",
+      "server_command": "python3 /opt/northwindpay/mcp-servers/expense-ocr/server.py",
+      "expected_technique_id": "SAF-T1001",
+      "expected_rule_id": "100102",
+      "detail": "parse_receipt's advertised description carries a fresh HTML-comment-hidden directive (never seen in this project's own attack/evasion corpus wording)."
+    },
+    {
+      "id": "A2_over_privileged_rw_mount",
+      "session_id": "62465dee-3abc-f303-ae94-33c6c9633041",
+      "server_command": "npx -y @modelcontextprotocol/server-filesystem@2026.7.4 /data/production-ledger",
+      "detail": "A reporting-only persona's filesystem server is mounted read-write directly against /data/production-ledger; a write_file call succeeds (confirmed rw evidence in the AI-BOM) -- least-privilege violation for a read-only reporting workload."
+    },
+    {
+      "id": "A4_credential_exfil_read_hop",
+      "session_id": "00ecb412-ff02-0366-044f-6b4b79ad2046",
+      "server_command": "npx -y @modelcontextprotocol/server-filesystem@2026.7.4 /data/production-ledger",
+      "expected_technique_id": "SAF-T1502",
+      "expected_rule_id": "100101",
+      "detail": "read_text_file path='config/.env' on the production-ledger mount -- sensitive-suffix read hop."
+    },
+    {
+      "id": "A4_credential_exfil_exfil_hop",
+      "session_id": "02b809e7-59be-8b2a-c7db-83ce44aa3e17",
+      "server_command": "python3 /opt/northwindpay/mcp-servers/support-ticket-bot/server.py",
+      "expected_technique_id": "SAF-T1502",
+      "expected_rule_id": "100105",
+      "detail": "attach_note content field carries the read-hop's secret verbatim (plaintext) -- exfil hop."
+    },
+    {
+      "id": "A1_shadow_mcp_server",
+      "session_id": "4c5bfd6e-145a-71c4-5398-9b8c28a8bb1c",
+      "server_command": "python3 /opt/northwindpay/shadow-tools/mcp-crm-lite/server.py",
+      "detail": "Unlisted MCP server, absent from the client-declared known-good BOM -- an employee-provisioned CRM bridge never went through intake."
+    }
+  ],
+  "class_b_benign_decoys": [
+    {
+      "id": "B4_benign_dotdot_search",
+      "session_id": "991f9812-3f0b-56a7-228b-1fcc3b720157",
+      "server_command": "npx -y @modelcontextprotocol/server-filesystem@2026.7.4 /app/workspace",
+      "detail": "search_files with a legitimate sibling-directory '..' path -- negate-listed tool_name for rule 100108"
+    },
+    {
+      "id": "B4_benign_dotdot_search",
+      "session_id": "22b2ab82-5b6d-e5a6-1ecf-ba62796d61f0",
+      "server_command": "npx -y @modelcontextprotocol/server-filesystem@2026.7.4 /app/workspace",
+      "detail": "search_files with a legitimate sibling-directory '..' path -- negate-listed tool_name for rule 100108"
+    },
+    {
+      "id": "B4_benign_dotdot_search",
+      "session_id": "f99c1d66-1c50-ad8e-41bf-8390fd6d95f0",
+      "server_command": "npx -y @modelcontextprotocol/server-filesystem@2026.7.4 /app/workspace",
+      "detail": "search_files with a legitimate sibling-directory '..' path -- negate-listed tool_name for rule 100108"
+    },
+    {
+      "id": "B4_benign_dotdot_search",
+      "session_id": "109acff1-61e0-f672-26d9-89b5244bf790",
+      "server_command": "npx -y @modelcontextprotocol/server-filesystem@2026.7.4 /app/workspace",
+      "detail": "search_files with a legitimate sibling-directory '..' path -- negate-listed tool_name for rule 100108"
+    },
+    {
+      "id": "B1_legit_rw_scratch_mount",
+      "session_id": "8cbd3065-6280-d013-1a3d-56d6588794d8",
+      "server_command": "npx -y @modelcontextprotocol/server-filesystem@2026.7.4 /app/sandbox",
+      "detail": "agent scratch space, intentionally read-write -- must not be narrated as a risk finding"
+    },
+    {
+      "id": "B3_rarely_called_tool",
+      "session_id": "3c827413-beba-7729-e190-b7c84a4437ef",
+      "server_command": "python3 /opt/northwindpay/mcp-servers/slack-connector/server.py",
+      "detail": "post_message: advertised by the server, called exactly once across the whole capture -- low usage, not suspicious"
+    },
+    {
+      "id": "B2_legit_version_bump",
+      "session_id": "4a2023e6-acae-e836-ca6f-3f007ccb6c63",
+      "server_command": "python3 /opt/northwindpay/mcp-servers/fx-rates/server.py",
+      "detail": "server_version_hash changes (1.2.0 -> 1.3.0, routine release); tool_description_hash for get_rate is identical before/after -- must not be reported as a high-severity finding."
+    }
+  ],
+  "class_c_structurally_undetectable": [
+    {
+      "id": "C1_behavior_only_rug_pull",
+      "session_ids": [
+        "389fafc8-c679-e382-9844-67bbfa86d1f4",
+        "0cac3f06-121d-c99d-2d7c-a34b1ca0ed32"
+      ],
+      "server_command": "python3 /opt/northwindpay/mcp-servers/slack-connector/server.py",
+      "known_gap_ref": "SAF-T1201 known_gaps E11 (behavior-only rug pull, no advertised-metadata change)",
+      "detail": "list_channels silently omits 'finance-eng-private' in later sessions; tool_description_hash and server_version_hash are identical to every earlier session -- no field anywhere differs."
+    },
+    {
+      "id": "C3_homoglyph_poisoned_tool",
+      "session_id": "4c24c084-f480-86ce-17e2-28544be93227",
+      "server_command": "python3 /opt/northwindpay/mcp-servers/slack-connector/server.py",
+      "known_gap_ref": "SAF-T1001 known_gaps E3b (homoglyph substitution, deliberately not chased)",
+      "detail": "archive_channel's description hides a directive using Cyrillic homoglyphs for 'SYSTEM'/'before' -- visually similar, different codepoints, does not match rule 100102's Latin-letter pattern."
+    },
+    {
+      "id": "C2_base64_encoded_exfil",
+      "session_id": "0cee446f-ffdc-5611-fa0b-8a6d7917f12f",
+      "server_command": "python3 /opt/northwindpay/mcp-servers/support-ticket-bot/server.py",
+      "known_gap_ref": "SAF-T1502 known_gaps E8 (base64-encoded payload evades the exfil-hop literal-string match)",
+      "detail": "attach_note content is base64('DATABASE_URL=postgresql://nwp_svc:R7!qLmXo2z@ledger-db.internal:5432/settlements') -- no plaintext secret-shaped substring present."
+    }
+  ]
+}

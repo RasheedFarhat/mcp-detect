@@ -1,0 +1,24 @@
+<!--
+  Gate 4 red-team fixture -- 100103's ORIGINAL, superseded negate draft.
+
+  Reconstructed verbatim from docs/PHASE3A-DESIGN.md's own "Build results"
+  section (lines 150-170: the exact rule text, before correction) -- the
+  version that negates on tool_arguments.path's ABSENCE instead of on
+  tool_name, which "failed the hard gate": negate against a genuinely
+  absent field does not satisfy the condition in Wazuh 4.9.0, so this rule
+  silently never fires on its own true positive (an exfiltrate call with no
+  "path" key at all). Scratch id 100192, installed only transiently via
+  `docker compose cp` for this proof and removed immediately after -- never
+  committed, never touching wazuh/local_rules.xml (whose live 100103
+  negates on tool_name, the corrected version).
+-->
+<group name="mcp_detect_redteam,">
+  <rule id="100192" level="12">
+    <if_sid>100100</if_sid>
+    <field name="method" type="pcre2">^tools/call$</field>
+    <field name="tool_arguments.path" type="pcre2" negate="yes">(?i)(\.env$|id_rsa$|\.aws/credentials$)</field>
+    <field name="tool_arguments.data" type="pcre2">(?i)(postgres(ql)?://|BEGIN (OPENSSH|RSA|EC|DSA|PGP) PRIVATE KEY|\bsk-[A-Za-z0-9_-]{6,}|API_KEY\s*=|DATABASE_URL\s*=|AKIA[0-9A-Z]{16})</field>
+    <description>REDTEAM GATE4 FIXTURE -- 100103's original broken negate draft: tool=$(tool_name) data=$(tool_arguments.data)</description>
+    <group>mcp_detect_redteam,</group>
+  </rule>
+</group>

@@ -1,0 +1,41 @@
+{
+  "technique_id": "SAF-T1104",
+  "name": "sensitive_abs_read",
+  "detection_type": "structural",
+  "status": "validated",
+  "mitre_attack_ids": ["T1068"],
+  "mitre_atlas_ids": [],
+  "owasp_mcp": ["MCP02", "MCP10"],
+  "description": "A content-exposing file-read tool (read_file/read_text_file) invoked with a clean ABSOLUTE path targeting a well-known sensitive system location (/etc/passwd|shadow|gshadow|sudoers, /etc/ssh/, /root/, ~/.ssh/{authorized_keys,known_hosts,config}, /proc/*/environ, /var/run/secrets/) -- accessing data beyond the tool's intended workspace scope. Grounded live against github.com/SAFE-MCP/safe-mcp techniques/SAF-T1104 (Over-Privileged Tool Abuse, tactic Execution ATK-TA0002; upstream's own example is 'Using a file-reading tool to access configuration files ... beyond the tool's intended scope'). ATT&CK T1068 (Exploitation for Privilege Escalation) cited from SAF-T1104's own MITRE ATT&CK Mapping list (T1059/T1068); T1068 over T1059 because no shell command executes here -- only a file tool's path argument. Data-access objective also aligns with T1005 (Data from Local System), the mapping SAF-T1105 uses, disclosed here the same way SAF-T1105 disclosed its own ATT&CK-fit reasoning. This detection CLOSES SAF-T1105's own disclosed known_gap E6 ('Absolute-path access without any ../ evades ... this rule matches the traversal MECHANISM, not arbitrary sensitive-path access') via a distinct mechanism: no '../' anywhere, so 100108 (traversal) misses it, and none of 100101's three named suffixes, so 100101 misses it -- exactly the D3 gap in docs/DISSECTION-FINDINGS.md, live-proven there. Authored end-to-end through the framework (attacks/abs_path_read_harness.py -> rule 100109 -> five gates), 0/4727 benign FP; see docs/ADD1-SAF-T1104-REPORT.md.",
+  "backends": [
+    {
+      "backend": "wazuh_rule",
+      "logic_ref": {
+        "wazuh_rule_ids": ["100109"],
+        "rule_file": "wazuh/local_rules.xml"
+      },
+      "consumes": "raw_telemetry",
+      "parent_rule": "100100"
+    }
+  ],
+  "expected_signal": {
+    "record_type": "tools/call",
+    "fields": ["tool_name", "tool_arguments.path"]
+  },
+  "session_key": {
+    "primary_field": "session_id",
+    "related_fields": []
+  },
+  "fixtures": {
+    "attack_corpus": "live:telemetry#label=malicious&scenario_id=sensitive_abs_read",
+    "benign_denominator": "data/benign_corpus_v2.jsonl#tool_call_events",
+    "evasion_corpus": "none"
+  },
+  "known_gaps": [
+    "Tool-name scope (positive): only read_file/read_text_file are matched, so a content-exposing read tool advertised under any other name evades -- the same bounded-tool-identity limitation SAF-T1502's exfil-hop negate-list (E5) and SAF-T1105's own negate-list already carry, disclosed not chased.",
+    "Bounded sensitive-path list: only the named sensitive locations above are matched; other sensitive absolute paths (e.g. /etc/krb5.keytab, an application-specific secret file, a custom secrets mount) evade by construction -- the same bounded-named-list nature as SAF-T1502's six credential shapes, disclosed as a deliberate scope boundary, not an open-ended list chased to exhaustion.",
+    "Encoded/obfuscated absolute paths (URL-encoded, Unicode-normalized) evade the literal path match -- same class as SAF-T1105's own encoding gaps (E2/E3/E4), not chased for the same reason.",
+    "Out-of-root access with no traversal sequence AND no matched sensitive prefix (e.g. via a symlink whose textual path looks benign) leaves nothing for an argument-text rule to match -- structurally invisible, same class as SAF-T1105's symlink gap, unverified (no stateful filesystem fixture authored).",
+    "Matches the tool-call ATTEMPT (the path argument), not the read's success -- deliberate, mirroring SAF-T1105's own outcome-independent IoC framing; a server that enforces its root boundary still surfaces the attempt, which is the detectable signal."
+  ]
+}

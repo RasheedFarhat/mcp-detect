@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/mcp-detect/schema/v1/schema.json",
+  "title": "MCP-DETECT telemetry log record (v1)",
+  "description": "One JSON-RPC 2.0 message observed by the stdio logging proxy, enriched with capture metadata, hashes, and labeling/provenance fields. See schema.md for prose documentation and the v0->v1 migration notes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "session_id",
+    "timestamp",
+    "direction",
+    "method",
+    "message_id",
+    "tool_name",
+    "tool_arguments",
+    "result_summary",
+    "server_command",
+    "tool_description_hash",
+    "server_version_hash",
+    "label",
+    "scenario_id",
+    "task_id",
+    "generator",
+    "raw"
+  ],
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Generated once per proxy process invocation; constant across all lines in a session."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC ISO 8601 timestamp (Z suffix) of when the proxy observed the line."
+    },
+    "direction": {
+      "type": "string",
+      "enum": ["client_to_server", "server_to_client"]
+    },
+    "method": {
+      "type": ["string", "null"],
+      "description": "JSON-RPC method, if present. null for plain responses."
+    },
+    "message_id": {
+      "type": ["string", "number", "null"],
+      "description": "JSON-RPC id, if present. null for notifications."
+    },
+    "tool_name": {
+      "type": ["string", "null"],
+      "description": "params.name when method == tools/call, else null."
+    },
+    "tool_arguments": {
+      "type": ["object", "null"],
+      "description": "params.arguments when method == tools/call, else null."
+    },
+    "result_summary": {
+      "type": ["string", "null"],
+      "maxLength": 256,
+      "description": "Truncated stringified preview of result/error for server_to_client responses, else null."
+    },
+    "server_command": {
+      "type": "string",
+      "description": "Sanitized identity of the wrapped server command. Common credential flag/assignment values are replaced before capture and hashing. Constant across all lines in a session."
+    },
+    "tool_description_hash": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Stable hash of {name, description, inputSchema} for tool_name, computed when tools/list revealed it. null when method != tools/call, or when tools/call happens before any tools/list response was observed this session."
+    },
+    "server_version_hash": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Stable hash of {server_name, server_version, server_command}, computed once initialize's response reveals serverInfo. null only for records preceding that response (i.e. at most the initialize request itself)."
+    },
+    "label": {
+      "type": "string",
+      "enum": ["benign", "malicious"],
+      "description": "Ground-truth label for the session that produced this record. Set by the caller of the proxy (the corpus/attack harness), not inferred."
+    },
+    "scenario_id": {
+      "type": "string",
+      "description": "Coarse scenario identifier. Phase 1 benign corpus uses \"benign\"; later phases use named attack scenario identifiers."
+    },
+    "task_id": {
+      "type": "string",
+      "description": "Identifier for the specific task template this session ran (e.g. \"read_and_summarize_file\")."
+    },
+    "generator": {
+      "type": "string",
+      "description": "Name/version stamp of the capture tool that produced this record, e.g. \"mcp-detect-proxy/1.1\"."
+    },
+    "raw": {
+      "type": "object",
+      "description": "The complete, unmodified JSON-RPC 2.0 message as parsed from the wire.",
+      "properties": {
+        "jsonrpc": { "const": "2.0" }
+      },
+      "required": ["jsonrpc"]
+    },
+    "proxy_anomaly": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason", "byte_length"],
+      "properties": {
+        "reason": {
+          "type": "string",
+          "enum": ["invalid_json", "non_object_json", "line_too_long"]
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "description": "Present ONLY on a proxy-synthesized marker record noting a line on the stream could not be parsed as a JSON-RPC message -- absent (not null) on every real record, and never in `required` so existing v1 captures without this field stay valid unchanged. Metadata only: a reason code and the anomalous line's byte length, NEVER the line's actual content -- see schema.md."
+    }
+  }
+}

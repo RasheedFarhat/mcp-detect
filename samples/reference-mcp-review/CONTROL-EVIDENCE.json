@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "controls": [
+    {
+      "control_id": "identity_and_object_authorization",
+      "status": "verified",
+      "summary": "The fixed handler derives tenant identity from trusted context, rejects a cross-tenant object identifier, preserves same-tenant access, and removes tenant selection from the public schema.",
+      "tested_at": "2026-07-20T00:00:00Z",
+      "test_reference": "AUTHZ-NEG-001"
+    },
+    {
+      "control_id": "approved_tool_manifest",
+      "status": "verified",
+      "summary": "The fixed tool schema and authorization retest are pinned by the evidence manifest and verified before the retest runs.",
+      "tested_at": "2026-07-20T00:00:00Z",
+      "test_reference": "MANIFEST-001"
+    },
+    {
+      "control_id": "filesystem_boundary",
+      "status": "not_applicable",
+      "summary": "The reference invoice tool does not expose filesystem operations.",
+      "test_reference": "FS-NA-001"
+    },
+    {
+      "control_id": "secret_flow_and_egress",
+      "status": "not_tested",
+      "summary": "Secret flow is outside this single-finding reference fixture.",
+      "test_reference": "SECRET-NT-001"
+    },
+    {
+      "control_id": "artifact_and_release_integrity",
+      "status": "verified",
+      "summary": "The vulnerable source, fixed source, authorization test, and control evidence are pinned by SHA-256 before execution.",
+      "tested_at": "2026-07-20T00:00:00Z",
+      "test_reference": "ARTIFACT-001"
+    },
+    {
+      "control_id": "high_impact_write_approval",
+      "status": "not_applicable",
+      "summary": "The reference fixture exposes one read-only invoice lookup.",
+      "test_reference": "WRITE-NA-001"
+    }
+  ]
+}

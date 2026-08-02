@@ -1,0 +1,29 @@
+<!--
+  Gate 5 red-team fixture -- 100108's ORIGINAL, superseded draft that
+  produced a real, measured 20/4727 benign false positive.
+
+  Reconstructed verbatim from the first version of 100108 (before
+  docs/PHASE6-T1105-REPORT.md's fix): the traversal-match and 100101-suffix
+  negate are present, but the tool_name negate scoping (search_files,
+  list_directory, directory_tree, get_file_info, list_allowed_directories)
+  is missing. This is exactly the draft that fired on `search_files`'
+  legitimate "../proxy" / "../workspace/corpus" navigation in the real
+  benign corpus (data/benign_corpus_v2.jsonl) -- 20 records, confirmed by
+  reading them directly, not assumed. Scratch id 100196 (outside this
+  project's real 100100-100108/100200-100201 range and the other
+  redteam fixtures' 100191-100195 scratch range), installed only
+  transiently via `docker compose cp` for this proof and removed
+  immediately after -- never committed, never touching
+  wazuh/local_rules.xml (whose live 100108 has the full three-field scope
+  that closes this gap).
+-->
+<group name="mcp_detect_redteam,">
+  <rule id="100196" level="12">
+    <if_sid>100100</if_sid>
+    <field name="method" type="pcre2">^tools/call$</field>
+    <field name="tool_arguments.path" type="pcre2" negate="yes">(?i)(\.env$|id_rsa$|\.aws/credentials$)</field>
+    <field name="tool_arguments.path" type="pcre2">\.\.(/|\\)</field>
+    <description>REDTEAM GATE5 FIXTURE -- 100108's original draft, no tool_name scope</description>
+    <group>mcp_detect_redteam,</group>
+  </rule>
+</group>

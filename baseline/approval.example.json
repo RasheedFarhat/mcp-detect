@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "approvals": [
+    {
+      "kind": "tool_description",
+      "server_command": "python3 server.py",
+      "tool_name": "create_invoice",
+      "observed_hash": "sha256:replace-with-a-previously-observed-hash",
+      "approved_by": "reviewer@example.com",
+      "reason": "Schema diff and release ticket reviewed",
+      "approved_at": "2026-07-20T00:00:00Z"
+    }
+  ]
+}

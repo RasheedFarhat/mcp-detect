@@ -1,0 +1,7 @@
+{
+  "theme": "dark",
+  "language": "en",
+  "notifications_enabled": true,
+  "max_recent_items": 10,
+  "note": "Benign fixture: a plausible config-shaped file living under a directory literally named config/, used to probe the false-positive boundary of path-based sensitive-file detection. Contains no secrets."
+}

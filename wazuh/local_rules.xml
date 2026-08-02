@@ -1,0 +1,439 @@
+<!--
+  MCP-DETECT Phase 0 — single hand-written rule.
+
+  Drop this file at /var/ossec/etc/rules/mcp_detect_rules.xml on the Wazuh
+  manager and reference it from ossec.conf's <ruleset><rule_dir> (or place its
+  contents inside the manager's existing local_rules.xml). Requires the
+  <localfile> block in ossec_localfile.xml to be present so telemetry lines
+  are read with log_format json — that is what turns each JSON key (session_id,
+  direction, method, tool_name, tool_arguments.path, ...) into a dynamic field
+  usable in <field name="..."> below, with no custom decoder needed.
+
+  Rule IDs use the 100000+ range reserved for local/custom rules so they don't
+  collide with Wazuh's default ruleset.
+
+  This is intentionally ONE rule per the Phase 0 scope (no precision/recall
+  harness, no rule pack). It is not routed through the Sigma->Wazuh compiler
+  in DaC-Pipeline; that integration is a later phase.
+-->
+<group name="mcp_detect,">
+
+  <!--
+    Parent rule: matches any ingested MCP-DETECT telemetry record. Level 0
+    (informational, does not alert by itself) — it exists only so the child
+    rule below can anchor to it via if_sid, which is the idiomatic Wazuh way
+    to scope a specific-condition rule to "this class of log" instead of
+    re-matching the whole JSON blob from scratch.
+  -->
+  <rule id="100100" level="0">
+    <decoded_as>json</decoded_as>
+    <field name="session_id" type="pcre2">.+</field>
+    <field name="server_command" type="pcre2">.+</field>
+    <description>MCP-DETECT telemetry record ingested</description>
+  </rule>
+
+  <!--
+    The one rule that must fire: a tools/call whose argument path targets a
+    known-sensitive file. Matches on the structured tool_arguments.path field
+    (not a raw-log regex) so it's robust to whichever key order json_format
+    produces, and to which specific read-tool name the server exposes.
+    Sensitive-path patterns cover the three examples given: .env, id_rsa,
+    .aws/credentials. Case-insensitive since paths can vary in case.
+  -->
+  <rule id="100101" level="12">
+    <if_sid>100100</if_sid>
+    <field name="method" type="pcre2">^tools/call$</field>
+    <field name="tool_arguments.path" type="pcre2">(?i)(\.env$|id_rsa$|\.aws/credentials$)</field>
+    <description>MCP sensitive file read via tool call: tool=$(tool_name) path=$(tool_arguments.path)</description>
+    <mitre>
+      <id>T1552.001</id>
+    </mitre>
+    <group>mcp_detect,sensitive_read,</group>
+  </rule>
+
+  <!--
+    Phase 3a, rules 2-6 of 6 (100103-100107, one sibling per exfil argument
+    key name): the exfil half of credential exfiltration --
+    secret-shaped content (postgres connection strings, private-key markers,
+    sk-prefixed API keys, etc.) appearing in a tool call's argument, distinct
+    from 100101's path-based read signal. Deliberately scoped to
+    tool_arguments.data ONLY, never result_summary/raw -- see
+    docs/WAZUH-NOTES.md's "Inherited constraints from Phase 1/2" #3 (the
+    fs_read_makefile/git_show_head_commit Makefile-content collision that a
+    full-record scan would hit).
+
+    Sibling-shadowing structural fix (docs/PHASE3A-DESIGN.md): 100101 and
+    100103 are both tools/call-scoped children of 100100, and Wazuh's engine
+    (confirmed, docs/WAZUH-NOTES.md Test 5) fires at most one matching
+    sibling per record, arbitrated by undocumented internal order -- so
+    without a fix, a record satisfying both conditions would silently lose
+    one signal to declaration order. FIRST ATTEMPT (superseded): negate="yes"
+    on tool_arguments.path, on the theory that negating exactly 100101's
+    condition would make the two disjoint by construction. Verified with
+    wazuh-logtest against 100103's own true positive (the exfiltrate call,
+    which has no "path" key at all) BEFORE building anything else on top of
+    it -- and it failed: negate="yes" against a field that is entirely
+    ABSENT does not satisfy the condition in Wazuh 4.9.0, so the rule
+    silently never fired on its own target (phantom coverage on our own
+    attack). CORRECTED: negate on tool_name instead, which is always present
+    on every tools/call record (schema v1) so the absent-field failure mode
+    doesn't apply -- excludes the known file-read-shaped tool names that
+    could plausibly also carry a "path" argument, verified firing on the
+    real exfiltrate record via wazuh-logtest. Narrower than the original
+    goal (bounded to named tool identities, not universal), stated honestly
+    rather than left implicit -- see docs/PHASE3A-DESIGN.md.
+  -->
+  <rule id="100103" level="12">
+    <if_sid>100100</if_sid>
+    <field name="method" type="pcre2">^tools/call$</field>
+    <field name="tool_name" type="pcre2" negate="yes">^(read_file|read_text_file|get_file_info|edit_file|create_directory|list_directory|directory_tree)$</field>
+    <field name="tool_arguments.data" type="pcre2">(?i)(postgres(ql)?://|BEGIN (OPENSSH|RSA|EC|DSA|PGP) PRIVATE KEY|\bsk-[A-Za-z0-9_-]{6,}|API_KEY\s*=|DATABASE_URL\s*=|AKIA[0-9A-Z]{16})</field>
+    <description>MCP tool call argument contains secret-shaped content: tool=$(tool_name) data=$(tool_arguments.data)</description>
+    <mitre>
+      <id>T1041</id>
+    </mitre>
+    <group>mcp_detect,credential_exfil,covert_exfil,</group>
+  </rule>
+
+  <!--
+    100104-100107: siblings of 100103, one per additional exfil-tool argument
+    key name (payload/content/body/message), closing the 3/11 recall gap the
+    variant round measured -- see docs/PHASE3A-DESIGN.md. Same structure and
+    same tool_name exclusion guard as 100103 (kept disjoint from 100101 the
+    same way). Wazuh's rule DSL has no dynamic/wildcard field-name matching
+    and no OR across different field names within one rule, so one sibling
+    per key name is the only structurally available option -- verified via
+    wazuh-logtest that each key decodes to its own clean scalar field
+    (tool_arguments.payload/.content/.body/.message), same as .data, before
+    writing these.
+
+    Scope check done with evidence, not assumed (docs/WAZUH-NOTES.md
+    constraint 3 was about result_summary/raw, not tool_arguments): scanned
+    all tool_arguments key usage across the full 4727-record benign v2
+    corpus. data/payload/body/message are used by zero real benign tools.
+    content IS real and active (47 occurrences, from write_file in the
+    sandbox mutate-tool tasks) -- none of those 47 values are secret-shaped,
+    confirmed by scanning them, but this key carries a qualitatively
+    different (nonzero-in-principle) risk than the other three and is
+    flagged as such, not treated as equally risk-free.
+  -->
+  <rule id="100104" level="12">
+    <if_sid>100100</if_sid>
+    <field name="method" type="pcre2">^tools/call$</field>
+    <field name="tool_name" type="pcre2" negate="yes">^(read_file|read_text_file|get_file_info|edit_file|create_directory|list_directory|directory_tree)$</field>
+    <field name="tool_arguments.payload" type="pcre2">(?i)(postgres(ql)?://|BEGIN (OPENSSH|RSA|EC|DSA|PGP) PRIVATE KEY|\bsk-[A-Za-z0-9_-]{6,}|API_KEY\s*=|DATABASE_URL\s*=|AKIA[0-9A-Z]{16})</field>
+    <description>MCP tool call argument contains secret-shaped content: tool=$(tool_name) payload=$(tool_arguments.payload)</description>
+    <mitre>
+      <id>T1041</id>
+    </mitre>
+    <group>mcp_detect,credential_exfil,covert_exfil,</group>
+  </rule>
+
+  <rule id="100105" level="12">
+    <if_sid>100100</if_sid>
+    <field name="method" type="pcre2">^tools/call$</field>
+    <field name="tool_name" type="pcre2" negate="yes">^(read_file|read_text_file|get_file_info|edit_file|create_directory|list_directory|directory_tree)$</field>
+    <field name="tool_arguments.content" type="pcre2">(?i)(postgres(ql)?://|BEGIN (OPENSSH|RSA|EC|DSA|PGP) PRIVATE KEY|\bsk-[A-Za-z0-9_-]{6,}|API_KEY\s*=|DATABASE_URL\s*=|AKIA[0-9A-Z]{16})</field>
+    <description>MCP tool call argument contains secret-shaped content: tool=$(tool_name) content=$(tool_arguments.content)</description>
+    <mitre>
+      <id>T1041</id>
+    </mitre>
+    <group>mcp_detect,credential_exfil,covert_exfil,</group>
+  </rule>
+
+  <rule id="100106" level="12">
+    <if_sid>100100</if_sid>
+    <field name="method" type="pcre2">^tools/call$</field>
+    <field name="tool_name" type="pcre2" negate="yes">^(read_file|read_text_file|get_file_info|edit_file|create_directory|list_directory|directory_tree)$</field>
+    <field name="tool_arguments.body" type="pcre2">(?i)(postgres(ql)?://|BEGIN (OPENSSH|RSA|EC|DSA|PGP) PRIVATE KEY|\bsk-[A-Za-z0-9_-]{6,}|API_KEY\s*=|DATABASE_URL\s*=|AKIA[0-9A-Z]{16})</field>
+    <description>MCP tool call argument contains secret-shaped content: tool=$(tool_name) body=$(tool_arguments.body)</description>
+    <mitre>
+      <id>T1041</id>
+    </mitre>
+    <group>mcp_detect,credential_exfil,covert_exfil,</group>
+  </rule>
+
+  <rule id="100107" level="12">
+    <if_sid>100100</if_sid>
+    <field name="method" type="pcre2">^tools/call$</field>
+    <field name="tool_name" type="pcre2" negate="yes">^(read_file|read_text_file|get_file_info|edit_file|create_directory|list_directory|directory_tree)$</field>
+    <field name="tool_arguments.message" type="pcre2">(?i)(postgres(ql)?://|BEGIN (OPENSSH|RSA|EC|DSA|PGP) PRIVATE KEY|\bsk-[A-Za-z0-9_-]{6,}|API_KEY\s*=|DATABASE_URL\s*=|AKIA[0-9A-Z]{16})</field>
+    <description>MCP tool call argument contains secret-shaped content: tool=$(tool_name) message=$(tool_arguments.message)</description>
+    <mitre>
+      <id>T1041</id>
+    </mitre>
+    <group>mcp_detect,credential_exfil,covert_exfil,</group>
+  </rule>
+
+  <!--
+    Phase 3a, rule 1 of 6: tool poisoning (SAF-T1001) -- a hidden
+    HTML-comment instruction in a tool's advertised description, revealed in
+    a tools/list response. Deliberately requires BOTH the HTML-comment
+    structure and directive-language content (not just any comment) to
+    target the actual documented threat pattern rather than flag incidental
+    comments -- HTML-comment obfuscation only, per the approved scope;
+    stealthier variants (invisible Unicode, homoglyphs) are out of scope for
+    this slice.
+
+    Root-caused, not worked around -- full writeup in docs/PHASE3A-DESIGN.md
+    and docs/WAZUH-NOTES.md, summary here: the original design matched
+    raw.result.tools (the whole tools array, which Wazuh's JSON decoder
+    flattens into one string field -- confirmed present and readable via
+    wazuh-logtest) using &lt;!-- (XML-entity-escaped "<!--") in the pcre2
+    pattern. This appeared to crash wazuh-manager on restart. Root cause,
+    found by dumping the actual decoded bytes (xxd) rather than trusting the
+    pattern: the telemetry DATA genuinely contains a literal, unescaped
+    "<!--" (confirmed byte-for-byte, no entity, no corruption) -- but
+    Wazuh's rule-XML parser does not correctly decode the &lt; entity inside
+    a <field> pcre2 pattern before compiling it, so the compiled regex was
+    silently never able to match real data at all. Confirmed by testing
+    PCRE2's own \x3c hex escape for the same character instead of the XML
+    entity: it matches correctly. Once that was the known-good escape,
+    re-tested raw.result.tools itself (the original field) purely via
+    wazuh-logtest (no manager restart, per the session's process rule after
+    repeated restart-cycling wedged the manager) and it matched cleanly with
+    no crash and no error -- meaning the earlier "crash" was very likely
+    confounded by unrelated container-lifecycle/QEMU-emulation instability
+    (this image is linux/amd64 emulated on an arm64 host -- see
+    docs/PHASE0.md's prior note on the same class of fragility), not a
+    genuine incompatibility between pcre2 and this array-flattened field.
+    Net result: no truncation trade-off needed after all -- this matches the
+    full, untruncated tools array via raw.result.tools, not the 256-char
+    result_summary preview that was accepted as a fallback mid-investigation
+    and then superseded once the real bug was found.
+  -->
+  <!--
+    Phase 5 hardening (docs/PHASE5-DESIGN.md, E3): the keyword alternation
+    below is interspersed with \p{Cf}* (Unicode General Category "Format" --
+    zero-width spaces, joiners, BOM, and similar invisible characters) between
+    every letter of every keyword. This is a genuine generalization, not a
+    memorized specimen: it defeats ANY insertion of ANY character in that
+    Unicode category at ANY position within a keyword, not just the one
+    zero-width-space construction Phase 5's E3a evasion happened to test.
+    Confirmed via wazuh-logtest that Wazuh's PCRE2 build supports `(*UTF)(*UCP)`
+    mode and `\p{Cf}` before this was written, not assumed.
+
+    Deliberately does NOT address homoglyph substitution (Phase 5's E3b --
+    e.g. Cyrillic "Ѕ" for Latin "S"): confirmed via wazuh-logtest that
+    \p{Cf} correctly does not match printable homoglyph characters (they
+    aren't format/invisible codepoints), so E3b still evades this rule.
+    This is a deliberate scope boundary, not an oversight -- per this
+    phase's harden-vs-document policy, enumerating homoglyph-equivalence
+    classes per letter would be the exact same open-ended whack-a-mole as
+    enumerating directive phrasing (E1's already-accepted document-only
+    gap): there is no bounded set of cross-script confusables to enumerate
+    against. Documented as a standing gap, not chased here.
+  -->
+  <rule id="100102" level="12">
+    <if_sid>100100</if_sid>
+    <field name="raw.result.tools" type="pcre2">(*UTF)(*UCP)(?i)\x3c!--.{0,120}(S\p{Cf}*Y\p{Cf}*S\p{Cf}*T\p{Cf}*E\p{Cf}*M|I\p{Cf}*M\p{Cf}*P\p{Cf}*O\p{Cf}*R\p{Cf}*T\p{Cf}*A\p{Cf}*N\p{Cf}*T|I\p{Cf}*N\p{Cf}*S\p{Cf}*T\p{Cf}*R\p{Cf}*U\p{Cf}*C\p{Cf}*T\p{Cf}*I\p{Cf}*O\p{Cf}*N|C\p{Cf}*O\p{Cf}*N\p{Cf}*F\p{Cf}*I\p{Cf}*D\p{Cf}*E\p{Cf}*N\p{Cf}*T\p{Cf}*I\p{Cf}*A\p{Cf}*L|A\p{Cf}*D\p{Cf}*M\p{Cf}*I\p{Cf}*N\p{Cf}* \p{Cf}*O\p{Cf}*V\p{Cf}*E\p{Cf}*R\p{Cf}*R\p{Cf}*I\p{Cf}*D\p{Cf}*E|N\p{Cf}*O\p{Cf}*T\p{Cf}*E\p{Cf}* \p{Cf}*T\p{Cf}*O\p{Cf}* \p{Cf}*A\p{Cf}*I|D\p{Cf}*O\p{Cf}* \p{Cf}*N\p{Cf}*O\p{Cf}*T\p{Cf}* (M\p{Cf}*E\p{Cf}*N\p{Cf}*T\p{Cf}*I\p{Cf}*O\p{Cf}*N|R\p{Cf}*E\p{Cf}*V\p{Cf}*E\p{Cf}*A\p{Cf}*L)|B\p{Cf}*E\p{Cf}*F\p{Cf}*O\p{Cf}*R\p{Cf}*E\p{Cf}* (Y\p{Cf}*O\p{Cf}*U|R\p{Cf}*E\p{Cf}*S\p{Cf}*P\p{Cf}*O\p{Cf}*N\p{Cf}*D\p{Cf}*I\p{Cf}*N\p{Cf}*G|R\p{Cf}*E\p{Cf}*T\p{Cf}*U\p{Cf}*R\p{Cf}*N\p{Cf}*I\p{Cf}*N\p{Cf}*G))</field>
+    <description>MCP tool description contains a hidden HTML-comment instruction: tools=$(raw.result.tools)</description>
+    <mitre>
+      <id>T1195</id>
+    </mitre>
+    <group>mcp_detect,tool_poisoning,</group>
+  </rule>
+
+  <!--
+    Phase 5 (E5, docs/PHASE5-DESIGN.md): NOT hardened, and here is the
+    specific reason, proven rather than assumed -- an evasion was found
+    that spoofs the exfiltrate tool's advertised name as one of the seven
+    negate-listed benign read-tool names below (e.g. "read_text_file"),
+    which structurally excludes it from 100103-107. The obvious fix --
+    negate="yes" on tool_arguments.path's ABSENCE instead of tool_name --
+    was tested via wazuh-logtest against its own true positive (the spoofed
+    call, which has no "path" key at all) before writing anything further,
+    per this project's standing negate-on-absent-field gate. It failed
+    identically to the original 100103 draft this same gate caught in
+    Phase 3a: the candidate rule was tried and did not match. There is no
+    known construction in Wazuh's classic rule DSL that expresses "fire
+    unless a sensitive path argument is present" without hitting this same
+    wall. Document-only for this round. The real fix -- and it also closes
+    Phase 5's E6 (6th-argument-key) gap in the same stroke, since both are
+    symptoms of the same limitation -- is moving this content signal
+    outside Wazuh entirely: an external scanner (architecturally similar to
+    baseline/watch.py) can express "does tool_arguments have a path key
+    matching the sensitive suffix" as a native Python absence check, with
+    no negate-on-absent-field landmine at all. Named as a real direction,
+    not built this round.
+  -->
+
+  <!--
+    Phase 3b: rug pull (SAF-T1201) -- persistent-baseline detection. Every
+    rule above is a single-record stateless match; rug pull needs "differs
+    from an established baseline," which Wazuh's classic rule DSL cannot
+    express at all, and Wazuh's own bounded correlation
+    (if_matched_sid/frequency/timeframe) is hard-capped at 99999s (~27.7h) --
+    far short of a real rug pull's days-to-months timescale (postmark-mcp:
+    15 published versions before the backdoor). See docs/PHASE3B-DESIGN.md.
+
+    The actual detection happens OUTSIDE Wazuh, in baseline/watch.py: a small
+    external process that tails telemetry.jsonl, maintains a persistent
+    (tool_name, server_command) -> first-seen-hash baseline (TOFU, never a
+    bounded window), and -- only when a hash genuinely drifts from that
+    baseline -- appends one new, minimal JSON record to a SEPARATE stream
+    (rugpull_alerts.jsonl, its own <localfile> block in ossec_localfile.xml).
+    100200/100201 below are pipeline plumbing, not the detector: a stateless
+    match on that already-computed drift record, so this ruleset's role stays
+    identical to every rule above it -- one parent, one child, wazuh-logtest-
+    first iteration, nothing stateful asked of Wazuh itself.
+
+    New top-level parent, not a child of 100100 -- deliberately, and proven
+    disjoint from it rather than assumed. 100100 requires fields literally
+    named `session_id` and `server_command` to be present (see its own
+    definition above); the drift record emitted by baseline/watch.py never
+    contains a key named `session_id` at all (its session-identifying field
+    is named `drift_session_id`, precisely to avoid this collision) -- so
+    100100's positive (non-negated) field-presence conditions cannot be
+    satisfied by a drift record, full stop, no reliance on Wazuh's
+    undocumented top-level sibling-ordering (docs/WAZUH-NOTES.md Tests 1/3/4).
+    This is the same "formally disjoint by construction, readable from the
+    XML alone" fix 3a used for 100101/100103, one level up, and simpler here
+    since no negation was needed at all -- which matters, because negating
+    100100 on the drift marker's ABSENCE would have hit the exact
+    negate-on-absent-field gate that failed once already in 3a (real
+    telemetry genuinely lacks that field, so negating on its absence would
+    never be satisfied for the very traffic 100100 exists to match).
+
+    Confirmed empirically, not just argued from field names -- and a good
+    thing it was checked: the field originally chosen for this marker was
+    named `event_type` (a plain, seemingly-safe discriminator name). Fed
+    through wazuh-logtest, it never reached 100100 OR 100200/100201 --
+    Wazuh's own stock Suricata parent rule (86600, in
+    /var/ossec/ruleset/rules/0475-suricata_rules.xml, shipped, not authored
+    here) requires exactly `<decoded_as>json</decoded_as>` + fields literally
+    named `timestamp` and `event_type` both present -- and every drift record
+    already carries `timestamp` too. A real top-level-shadowing collision
+    against a STOCK rule, not 100100, caught only by running the actual
+    engine rather than trusting the field-name argument alone. Renamed to
+    `mcp_drift_marker` (grepped against all loaded stock+custom rule files
+    for every field name this record uses -- zero collisions for any of
+    them) and reconfirmed clean via wazuh-logtest. See docs/PHASE3B-DESIGN.md's
+    build results for the full trace.
+  -->
+  <rule id="100200" level="0">
+    <decoded_as>json</decoded_as>
+    <field name="mcp_drift_marker" type="pcre2">^rugpull_baseline_drift$</field>
+    <description>MCP-DETECT rug-pull baseline-drift record ingested</description>
+  </rule>
+
+  <rule id="100201" level="12">
+    <if_sid>100200</if_sid>
+    <field name="drift_field" type="pcre2">.+</field>
+    <description>MCP rug pull: tool=$(tool_name) server=$(server_command) field=$(drift_field) baseline=$(baseline_hash) observed=$(observed_hash)</description>
+    <mitre>
+      <id>T1554</id>
+    </mitre>
+    <group>mcp_detect,rug_pull,</group>
+  </rule>
+
+  <!--
+    Phase 6 slice 3: path traversal via file tool (SAF-T1105) -- the first
+    detection authored through the framework, not migrated into it.
+    Grounded live against github.com/SAFE-MCP/safe-mcp's
+    techniques/SAF-T1105/README.md before writing anything: relative-path
+    traversal ("../") sequences in a file tool's path argument, escaping
+    the intended directory to reach files outside scope (SSH keys,
+    /etc/passwd, .env, config.json, etc.). Upstream's own "MITRE ATT&CK
+    Mapping" section states T1059.004 (Unix Shell) as its primary mapping
+    -- a loose fit here, since no shell command is executed, only a file
+    tool's path argument. T1005 (Data from Local System) is used instead,
+    still cited from that same upstream document's own "Related ATT&CK
+    Techniques" list, not invented -- see docs/PHASE6-T1105-REPORT.md for
+    the full disclosed reasoning. Same if_sid/tools-call scoping as every
+    rule above; disjointness from 100101 required a real fix, not an
+    assumption -- see below.
+
+    Disjointness from 100101, adjudicated empirically before either draft
+    was committed (both drafts tested via temp docker-cp files, never
+    touching this committed file, exactly the standing process rule this
+    project has followed since Phase 0): a path like "../../.env" matches
+    BOTH 100101 (ends in a sensitive suffix) and a naive traversal-only
+    draft of this rule (contains "../") -- confirmed via wazuh-logtest that
+    the naive draft never fires on that overlap; 100101 always won the
+    sibling race. This is the exact class docs/WAZUH-NOTES.md's Tests 1-5
+    and the original 100101/100103 fix already describe, now hit again
+    with a genuinely new rule for the first time since the framework
+    existed to catch it. Fixed the same way 100103 was made disjoint from
+    100101 originally -- negate on the SAME three sensitive suffixes
+    100101 already owns, so this rule only fires on traversal to a path
+    NOT ending in one of them, and 100101 keeps owning the sensitive-suffix
+    case regardless of how it was reached. Unlike 100103's ORIGINAL,
+    superseded negate draft (negate on tool_arguments.path's absence,
+    docs/PHASE3A-DESIGN.md:470-478), this negate is on a field
+    (tool_arguments.path) that is always PRESENT for this rule's own true
+    positives -- just not matching the negated pattern -- so it does not
+    hit the negate-on-absent-field landmine at all. Confirmed via
+    wazuh-logtest before finalizing: "../../.env" -> 100101 (correctly
+    excluded here), "../../.ssh/id_rsa" -> 100101 (correctly excluded),
+    "../../../etc/hosts" -> 100108 (correctly fires, no sensitive-suffix
+    overlap), plain "id_rsa" -> 100101 unaffected (no regression).
+
+    Second finding, from measurement against the full 4727-record benign
+    corpus, not assumed clean: the first version of this rule (traversal
+    pattern only, no tool_name scope) produced 20 real false positives, all
+    from `search_files` -- a real MCP filesystem-server tool that
+    legitimately navigates to sibling directories (e.g. "../proxy",
+    "../workspace/corpus") as part of ordinary directory search, confirmed
+    by reading the actual benign records, not asserted. Checked every other
+    tool_name that ever carries a `path` argument in the benign corpus
+    (create_directory, edit_file, get_file_info, list_allowed_directories,
+    list_directory, read_text_file, write_file) -- none of the
+    content-exposing ones (read_text_file, write_file, edit_file) use "../"
+    anywhere in this corpus; only the metadata/search tools do. Fixed by
+    adding a third field, negate="yes" on the known metadata/search tool
+    names (search_files, list_directory, directory_tree, get_file_info,
+    list_allowed_directories) -- tool_name is always present on a
+    tools/call record (schema v1, confirmed by 100103's own precedent), so
+    this is the same safe class of negate as the two above, not the
+    absent-field landmine. Re-measured after the fix: 0/4727 benign FP,
+    all 8 authored attack fixtures still fire correctly (6 on 100108, 2
+    correctly deferred to 100101). This is the same shape of fix
+    100103-100107 already use (a negate-list of known-benign tool
+    identities) and inherits the SAME named limitation E5 already proved
+    for that family: a traversal tool renamed to one of these five
+    excluded names would evade this rule -- named as a known_gap in
+    detections/SAF-T1105_path_traversal/detection.yaml, not silently
+    assumed fixed. See docs/PHASE6-T1105-REPORT.md for the full
+    before/after measurement.
+  -->
+  <rule id="100108" level="12">
+    <if_sid>100100</if_sid>
+    <field name="method" type="pcre2">^tools/call$</field>
+    <field name="tool_name" type="pcre2" negate="yes">^(search_files|list_directory|directory_tree|get_file_info|list_allowed_directories)$</field>
+    <field name="tool_arguments.path" type="pcre2" negate="yes">(?i)(\.env$|id_rsa$|\.aws/credentials$)</field>
+    <field name="tool_arguments.path" type="pcre2">\.\.(/|\\)</field>
+    <description>MCP path traversal via file tool: tool=$(tool_name) path=$(tool_arguments.path)</description>
+    <mitre>
+      <id>T1005</id>
+    </mitre>
+    <group>mcp_detect,path_traversal,</group>
+  </rule>
+
+  <!--
+    ADD-1 / SAF-T1104 (Over-Privileged Tool Abuse) -- sensitive absolute-path
+    read via a content-exposing file tool. Closes SAF-T1105's disclosed E6
+    (absolute-path-no-dots). Positive tool-name scope (read_file/read_text_file);
+    negate 100101's three suffixes (defer sensitive-suffix reads to 100101) and
+    negate the traversal shape (defer ../ reads to 100108) -- both negates on a
+    field (tool_arguments.path) always PRESENT for this rule's own true positive,
+    so not the negate-on-absent-field landmine. Final field is the positive
+    signal: a bounded, named list of sensitive absolute targets. Authored and
+    validated through the framework's five gates (0/4727 benign FP), telemetry
+    generated by attacks/abs_path_read_harness.py -- see docs/ADD1-SAF-T1104-REPORT.md.
+  -->
+  <rule id="100109" level="12">
+    <if_sid>100100</if_sid>
+    <field name="method" type="pcre2">^tools/call$</field>
+    <field name="tool_name" type="pcre2">^(read_file|read_text_file)$</field>
+    <field name="tool_arguments.path" type="pcre2" negate="yes">(?i)(\.env$|id_rsa$|\.aws/credentials$)</field>
+    <field name="tool_arguments.path" type="pcre2" negate="yes">\.\.(/|\\)</field>
+    <field name="tool_arguments.path" type="pcre2">(?i)(^/etc/(passwd|shadow|gshadow|sudoers)$|^/etc/ssh/|^/root/|/\.ssh/(authorized_keys|known_hosts|config)$|/proc/[0-9]+/environ$|^/proc/self/environ$|^/var/run/secrets/)</field>
+    <description>MCP sensitive absolute-path read via file tool: tool=$(tool_name) path=$(tool_arguments.path)</description>
+    <mitre>
+      <id>T1068</id>
+    </mitre>
+    <group>mcp_detect,over_privileged_tool_abuse,sensitive_abs_read,</group>
+  </rule>
+
+</group>

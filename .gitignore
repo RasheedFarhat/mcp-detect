@@ -1,0 +1,31 @@
+.venv/
+logs/
+__pycache__/
+*.pyc
+.DS_Store
+
+# pip install -e . build metadata (pyproject.toml) -- regenerated on every
+# install, never something to commit.
+*.egg-info/
+
+# Generated TLS certs/keys -- make certs regenerates these fresh every time;
+# never commit private keys.
+wazuh/config/wazuh_indexer_ssl_certs/
+
+# Persistent rug-pull baseline store (baseline/watch.py) -- regenerable from
+# telemetry replay, not something to hand-author or commit. Reset with
+# `python3 baseline/watch.py --reset ...`.
+baseline/state/*.json
+
+# Local overrides for docker-compose.yml's credential defaults (see
+# docker-compose.yml's own comment) -- never commit real values here.
+.env
+
+# Local Codex workspace material and the separately versioned documentation
+# site are not part of this repository.
+/.agents/
+/.claude/
+/AGENTS.md
+/website/
+/.mypy_cache/
+/.pytest_cache/

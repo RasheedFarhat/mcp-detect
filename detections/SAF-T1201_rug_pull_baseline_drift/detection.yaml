@@ -1,0 +1,48 @@
+{
+  "technique_id": "SAF-T1201",
+  "name": "rug_pull_baseline_drift",
+  "detection_type": "stateful",
+  "status": "deployed",
+  "mitre_attack_ids": ["T1554"],
+  "mitre_atlas_ids": [],
+  "owasp_mcp": ["MCP03", "MCP04"],
+  "description": "Persistent-baseline drift in a tool's advertised description or a server's version, detected against a TOFU baseline maintained outside Wazuh (baseline/watch.py), matched inside Wazuh only on the derived drift record it emits. The two-backend worked example docs/PHASE6-DESIGN.md Section 1 names -- proof that a single Detection can declare a stateful stage feeding a structural one, not two cooperating detections. Migrated verbatim: baseline/watch.py's process_record wrapped (import + delegate, no logic changes) behind RugPullBaselineDetector; wazuh/local_rules.xml rules 100200/100201 unchanged.",
+  "backends": [
+    {
+      "backend": "stateful",
+      "logic_ref": {
+        "python_class": "baseline.watch.RugPullBaselineDetector"
+      },
+      "consumes": "raw_telemetry",
+      "emits": "derived_record"
+    },
+    {
+      "backend": "wazuh_rule",
+      "logic_ref": {
+        "wazuh_rule_ids": ["100201"],
+        "rule_file": "wazuh/local_rules.xml"
+      },
+      "consumes": "derived_record",
+      "parent_rule": "100200"
+    }
+  ],
+  "pipeline": "chained",
+  "expected_signal": {
+    "record_type": "rugpull_baseline_drift derived record",
+    "fields": ["drift_field", "baseline_hash", "observed_hash"]
+  },
+  "session_key": {
+    "primary_field": "drift_session_id",
+    "related_fields": ["baseline_first_seen_session_id"]
+  },
+  "fixtures": {
+    "attack_corpus": "live:telemetry#label=malicious&scenario_id=rug_pull",
+    "canonical_derived_corpus": "live:rugpull_alerts",
+    "benign_denominator": "data/benign_corpus_v2.jsonl#all_records",
+    "evasion_corpus": "data/evasion_corpus_v1.jsonl#task_id~=attack_evasion_e10_legit_upgrade,attack_evasion_e11_behavior_only,attack_evasion_e12_pulled"
+  },
+  "known_gaps": [
+    "Legitimate version bumps initially produce the same drift signal as an unapproved change (E10). A versioned approval workflow now promotes only previously observed hashes and preserves reviewer/reason/history, but the alert still requires analyst release context before approval.",
+    "Behavior-only rug pulls with no advertised-metadata change are structurally invisible (E11) -- not fixable within this architecture, no field in MCP's protocol surface exposes runtime behavior for hashing"
+  ]
+}

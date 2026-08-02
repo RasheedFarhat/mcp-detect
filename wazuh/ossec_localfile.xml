@@ -1,0 +1,28 @@
+<!--
+  Wazuh agent/manager localfile block for MCP-DETECT Phase 0.
+
+  Add this <localfile> block inside <ossec_config> in the agent's
+  /var/ossec/etc/ossec.conf (or the manager's ossec.conf if the proxy runs on
+  the manager host itself, e.g. inside the single-node Wazuh container for
+  this local spike).
+
+  log_format "json" tells Wazuh to parse each line as a JSON object and
+  expose its fields (session_id, direction, method, tool_name, ...) as
+  dynamic fields under the alert, so the rule below can match on
+  data.tool_name / data.tool_arguments.* directly instead of raw regex.
+-->
+<localfile>
+  <log_format>json</log_format>
+  <location>/var/log/mcp-detect/telemetry.jsonl</location>
+</localfile>
+
+<!--
+  Phase 3b addition: the rug-pull baseline-drift stream emitted by
+  baseline/watch.py (see docs/PHASE3B-DESIGN.md), NOT the proxy -- a separate
+  file, deliberately, so rule 100200 can key on a field (mcp_drift_marker)
+  real telemetry records never have, without needing to touch rule 100100.
+-->
+<localfile>
+  <log_format>json</log_format>
+  <location>/var/log/mcp-detect/rugpull_alerts.jsonl</location>
+</localfile>

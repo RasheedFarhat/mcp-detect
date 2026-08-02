@@ -1,0 +1,40 @@
+{
+  "technique_id": "SAF-T1001",
+  "name": "tool_poisoning_html_comment",
+  "detection_type": "structural",
+  "status": "deployed",
+  "mitre_attack_ids": ["T1195"],
+  "mitre_atlas_ids": ["AML.T0051.001"],
+  "owasp_mcp": ["MCP03", "MCP04", "MCP06"],
+  "description": "HTML-comment-wrapped directive language in a tool's advertised description, revealed in a tools/list response. Migrated verbatim from wazuh/local_rules.xml rule 100102 -- zero XML changes, wrap-don't-rewrite per docs/PHASE6-DESIGN.md Section 3.",
+  "backends": [
+    {
+      "backend": "wazuh_rule",
+      "logic_ref": {
+        "wazuh_rule_ids": ["100102"],
+        "rule_file": "wazuh/local_rules.xml"
+      },
+      "consumes": "raw_telemetry",
+      "parent_rule": "100100"
+    }
+  ],
+  "expected_signal": {
+    "record_type": "tools/list response",
+    "fields": ["raw.result.tools"]
+  },
+  "session_key": {
+    "primary_field": "session_id",
+    "related_fields": []
+  },
+  "fixtures": {
+    "attack_corpus": "live:telemetry#label=malicious&scenario_id=tool_poisoning",
+    "benign_denominator": "data/benign_corpus_v2.jsonl#distinct_sessions",
+    "evasion_corpus": "data/evasion_corpus_v1.jsonl#task_id~=attack_evasion_e1_keyword_avoiding,attack_evasion_e2_no_html_comment,attack_evasion_e3a_zero_width,attack_evasion_e3b_homoglyph,attack_evasion_e4_distance_bound"
+  },
+  "known_gaps": [
+    "Keyword-avoiding phrasing (E1) -- not fixable without an open-ended list",
+    "No-HTML-comment obfuscation (E2) -- a directive placed in a plain (non-comment) tool description evades the literal '<!--' requirement. Unlike E1/E3b this is a bounded, measurable gap, not an open-ended list: the directive-keyword set is finite, so a plain-text keyword variant is a candidate fix whose false-positive cost is measurable against the benign corpus. Disclosed and not built here, not structurally unfixable.",
+    "Homoglyph substitution (E3b) -- deliberately not chased, same reason as E1",
+    "Padding past the 120-char proximity bound (E4)"
+  ]
+}

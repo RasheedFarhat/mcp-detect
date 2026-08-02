@@ -1,0 +1,16 @@
+{
+  "fixture": "reference-mcp-review",
+  "version": "1.1.0",
+  "synthetic": true,
+  "files": {
+    "vulnerable_server.py": "sha256:cd23f45dcf231a7c39628cbcc0fcd036df4289e2ecf36294815b74d248f75fa0",
+    "fixed_server.py": "sha256:1706fb7390568880e564d6edd4efa11eaf13e2d06663c4b476daef4613bb9501",
+    "tests/test_authorization.py": "sha256:2de42dc8911f75c3eaf5b99d4df13570342a8550cca1a8ef07dc9a90da2fb98c",
+    "CONTROL-EVIDENCE.json": "sha256:a3be76be4b94a62994e0e314aa6a8a84ce110bb24b271585c14224c57ea83a8b"
+  },
+  "expected_retest": {
+    "tests": 4,
+    "failures": 0,
+    "errors": 0
+  }
+}

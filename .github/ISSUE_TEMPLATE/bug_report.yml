@@ -1,0 +1,36 @@
+name: Bug report
+description: Report a reproducible problem in the lab or documentation.
+title: "[bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Do not include secrets, customer data, or unapproved exploit evidence."
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the observed and expected behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Provide the smallest safe sequence that reproduces the problem.
+    validations:
+      required: true
+  - type: input
+    id: revision
+    attributes:
+      label: Revision and environment
+      description: Commit, OS, Python version, and whether Docker/Wazuh was involved.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: This report contains no real credentials, private data, or unapproved access details.
+          required: true

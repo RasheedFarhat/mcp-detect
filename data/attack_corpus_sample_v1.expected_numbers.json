@@ -1,0 +1,32 @@
+{
+  "aggregate_fp": [
+    0,
+    4727
+  ],
+  "recall": {
+    "tool_poisoning_html_comment": [
+      3,
+      3
+    ],
+    "sensitive_abs_read": [
+      2,
+      3
+    ],
+    "path_traversal": [
+      2,
+      3
+    ],
+    "rug_pull_baseline_drift": [
+      3,
+      3
+    ],
+    "read_hop": [
+      2,
+      2
+    ],
+    "exfil_hop": [
+      2,
+      2
+    ]
+  }
+}

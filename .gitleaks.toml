@@ -1,0 +1,23 @@
+title = "MCP Detect secret scanning"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Synthetic security fixtures intentionally contain fake secret shapes"
+paths = [
+  '''^\.env\.example$''',
+  '''^Makefile$''',
+  '''^attacks/''',
+  '''^corpus/fixtures/''',
+  '''^data/''',
+  '''^framework/tests/''',
+  '''^northwindpay/''',
+  '''^redaction/''',
+  '''^wazuh/config/''',
+]
+regexes = [
+  '''(?i)fake''',
+  '''AKIAIOSFODNN7EXAMPLE''',
+  '''(?i)(example\.(com|test|invalid)|northwindpay\.example|example\.wazuh\.com)''',
+]

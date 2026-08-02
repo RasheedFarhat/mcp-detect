@@ -1,0 +1,15 @@
+{
+  "servers": [
+    "mcp-server-fetch",
+    "mcp-server-git --repository /app/workspace",
+    "mcp-server-time",
+    "npx -y @modelcontextprotocol/server-filesystem@2026.7.4 /app/sandbox",
+    "npx -y @modelcontextprotocol/server-filesystem@2026.7.4 /app/workspace",
+    "npx -y @modelcontextprotocol/server-filesystem@2026.7.4 /data/production-ledger",
+    "npx -y @modelcontextprotocol/server-memory@2026.7.4",
+    "python3 /opt/northwindpay/mcp-servers/expense-ocr/server.py",
+    "python3 /opt/northwindpay/mcp-servers/fx-rates/server.py",
+    "python3 /opt/northwindpay/mcp-servers/slack-connector/server.py",
+    "python3 /opt/northwindpay/mcp-servers/support-ticket-bot/server.py"
+  ]
+}

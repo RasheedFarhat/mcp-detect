@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mcp-detect-framework"
+version = "0.1.0"
+description = "Detection-as-Code framework for the mcp-detect MCP-abuse lab (framework/ + detections/)."
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+# Deliberately zero runtime dependencies -- this project has stayed
+# stdlib-only throughout (no PyYAML, no pytest; see docs/PHASE6-DESIGN.md's
+# own disclosed reasoning). detection.yaml files are JSON-valid YAML,
+# parsed with the stdlib json module for exactly this reason.
+dependencies = []
+
+[project.optional-dependencies]
+test = ["jsonschema>=4.23,<5"]
+
+# This manifest packages framework/ only -- the reusable Detection-as-Code
+# library and its own tests. It does not attempt to package the rest of
+# this repo (attacks/, analysis/, baseline/, corpus/, proxy/, client/),
+# which are lab-generation/measurement scripts run in place inside the
+# `agent` container or via the host .venv, not an installable library.
+[tool.setuptools.packages.find]
+include = ["framework*"]

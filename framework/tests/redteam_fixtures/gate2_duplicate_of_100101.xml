@@ -1,0 +1,23 @@
+<!--
+  Gate 2 red-team fixture -- a deliberately non-disjoint new rule.
+
+  Reconstructs the sibling-shadowing class docs/WAZUH-NOTES.md Tests 1-5
+  proved (two independent children of one matched parent that can both
+  match one event get arbitrated by undocumented internal order): this
+  rule's match conditions are IDENTICAL to 100101's (wazuh/local_rules.xml)
+  -- same if_sid, same fields, same pattern -- so any record that trips
+  100101 also trips this rule. Scratch id 100191, well outside this
+  project's real 100100-100201 range and outside the stock ruleset space,
+  installed only transiently via `docker compose cp` for this proof and
+  removed immediately after -- never committed, never touching
+  wazuh/local_rules.xml.
+-->
+<group name="mcp_detect_redteam,">
+  <rule id="100191" level="12">
+    <if_sid>100100</if_sid>
+    <field name="method" type="pcre2">^tools/call$</field>
+    <field name="tool_arguments.path" type="pcre2">(?i)(\.env$|id_rsa$|\.aws/credentials$)</field>
+    <description>REDTEAM GATE2 FIXTURE -- deliberately duplicates 100101</description>
+    <group>mcp_detect_redteam,</group>
+  </rule>
+</group>

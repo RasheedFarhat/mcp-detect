@@ -1,0 +1,33 @@
+name: Detection proposal
+description: Propose a defensible MCP observable and regression fixture.
+title: "[detection]: "
+labels: [enhancement, detection]
+body:
+  - type: textarea
+    id: threat
+    attributes:
+      label: Threat and trust boundary
+      description: What action or state change matters, and where is the trust decision?
+    validations:
+      required: true
+  - type: textarea
+    id: observable
+    attributes:
+      label: Defensible observable
+      description: What exact field, sequence, or state can the detector observe?
+    validations:
+      required: true
+  - type: textarea
+    id: limits
+    attributes:
+      label: Known evasions and limits
+      description: What can look identical or bypass this signal?
+    validations:
+      required: true
+  - type: textarea
+    id: fixture
+    attributes:
+      label: Safe fixture plan
+      description: Describe positive, negative, and evasion-oriented synthetic cases.
+    validations:
+      required: true

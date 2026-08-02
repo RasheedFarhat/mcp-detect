@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "controls": [
+    {
+      "control_id": "identity_and_object_authorization",
+      "status": "verified",
+      "summary": "Cross-tenant object identifiers were denied after identity was derived from the validated access token.",
+      "tested_at": "2026-07-20T00:00:00Z",
+      "test_reference": "AUTHZ-NEG-001"
+    },
+    {
+      "control_id": "filesystem_boundary",
+      "status": "verified",
+      "summary": "Encoded, absolute, and symlink escape probes were denied inside the approved test environment.",
+      "tested_at": "2026-07-20T00:00:00Z",
+      "test_reference": "FS-NEG-001"
+    },
+    {
+      "control_id": "approved_tool_manifest",
+      "status": "not_tested",
+      "summary": "No signed or pinned tool manifest was supplied for this review.",
+      "test_reference": "MANIFEST-001"
+    }
+  ]
+}
