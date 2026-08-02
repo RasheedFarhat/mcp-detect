@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/readme-hero.svg" alt="MCP Detect — Watch the agent work. Catch the break in trust." width="100%">
+  <img src="docs/assets/readme-hero.svg" alt="MCP Detect — How do you know your agent isn't going rogue?" width="100%">
 </p>
 
 <p align="center">
