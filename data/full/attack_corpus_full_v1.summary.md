@@ -89,4 +89,5 @@ number in `docs/PHASE4-REPORT.md`, not a new measurement. Combined with
 
 ## Licensing
 
-See `NOTICE.md` in this directory. Not licensed for redistribution.
+This synthetic corpus is included under the repository's MIT license. It
+contains no customer traffic or independently sourced production data.
