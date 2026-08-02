@@ -6,7 +6,7 @@
   <a href="https://github.com/RasheedFarhat/mcp-detect/actions/workflows/ci.yml"><img alt="Offline verification" src="https://img.shields.io/github/actions/workflow/status/RasheedFarhat/mcp-detect/ci.yml?branch=main&amp;style=flat-square&amp;label=offline%20verification"></a>
   <a href="https://github.com/RasheedFarhat/mcp-detect/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/RasheedFarhat/mcp-detect?sort=semver&amp;style=flat-square"></a>
   <a href="pyproject.toml"><img alt="Python 3.11 or newer" src="https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat-square&amp;logo=python&amp;logoColor=white"></a>
-  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/github/license/RasheedFarhat/mcp-detect?style=flat-square"></a>
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/github/license/RasheedFarhat/mcp-detect?style=flat-square&amp;cacheSeconds=300"></a>
 </p>
 
 <p align="center">
