@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/readme-hero.svg" alt="MCP Detect — What it catches. What it misses. Reproducible MCP abuse-detection research." width="100%">
+  <img src="docs/assets/readme-hero.svg" alt="MCP Detect — Watch the agent work. Catch the break in trust." width="100%">
 </p>
 
 <p align="center">
@@ -10,14 +10,15 @@
 </p>
 
 <p align="center">
-  <strong>Inspect the signal. Reproduce the claim.</strong><br>
-  MCP Detect turns MCP JSON-RPC traffic into structured telemetry, evaluates it
-  with structural and stateful detections, and pins every published result to
-  evidence you can run yourself.
+  <strong>To recognize abuse, start by observing legitimate tool use.</strong><br>
+  MCP Detect recorded an AI agent choosing and calling MCP tools, froze that
+  behavior as a labeled benign corpus, and tested every detection against what
+  the agent actually did when nothing was wrong.
 </p>
 
 <p align="center">
   <a href="#60-second-reproduction">Reproduce</a> ·
+  <a href="#start-with-normal">Method</a> ·
   <a href="#architecture-and-trust-boundary">Architecture</a> ·
   <a href="#measured-coverage">Coverage</a> ·
   <a href="#how-the-evidence-holds-together">Evidence</a> ·
@@ -25,7 +26,7 @@
   <a href="#contributing-security-and-citation">Contributing</a>
 </p>
 
-> [!IMPORTANT]
+> [!CAUTION]
 > **MCP Detect is research software, not a production monitor or security
 > guarantee.** Its included traffic is synthetic and self-authored. A clean run
 > means only that these bounded checks found no matching indicators.
@@ -73,6 +74,44 @@ MCP Detect makes the observable part of that path inspectable. A detection is
 published with its threat model, signal, implementation, synthetic fixtures,
 expected result, known misses, and reproduction path. The limitations ship
 with the rule.
+
+## Start with normal
+
+**To catch an agent crossing a line, first learn how it uses the same tools
+when the task is legitimate.**
+
+MCP Detect gave a local `qwen3:1.7b` model benign tasks across filesystem,
+Git, memory, time, and fetch servers. The model—not a scripted client—decided
+which tools to call, which arguments to send, and when it had enough
+information to stop. A transparent proxy recorded every JSON-RPC exchange and
+labeled it with its session, task, and scenario.
+
+```text
+ benign task ──▶ local AI agent ──▶ autonomous MCP tool calls ──▶ result
+                                           │
+                                           ▼
+                                    transparent proxy
+                                           │
+                                           ▼
+                                frozen, labeled benign corpus
+                                           │
+                                  detections must stay quiet
+```
+
+The frozen v2 corpus contains **541 sessions, 1,011 model-chosen tool calls,
+4,727 total records, and 20 distinct tools across six server configurations**.
+It deliberately preserves the model's wrong paths, malformed calls, retries,
+tool substitutions, and improvised workarounds. Those rough edges are useful:
+they make the false-positive test resemble agent behavior rather than a tidy
+set of invented happy paths.
+
+The tasks and environment are synthetic; the tool choices and mistakes were
+produced by the model. The published capture is immutable and checksummed
+because a fresh LLM run can be behaviorally similar without being byte-for-byte
+identical.
+
+Read the [corpus summary](data/benign_corpus_v2.summary.md), inspect the
+[agent loop](corpus/agent.py), or review the [task set](corpus/tasks.py).
 
 ## Architecture and trust boundary
 

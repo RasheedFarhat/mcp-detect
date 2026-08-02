@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="500" viewBox="0 0 1200 500" role="img" aria-labelledby="title desc">
   <title id="title">MCP Detect</title>
-  <desc id="desc">What it catches. What it misses. Reproducible open-source MCP abuse-detection research.</desc>
+  <desc id="desc">Watch the agent work. Catch the break in trust. Open-source MCP abuse-detection research grounded in recorded benign tool calls.</desc>
 
   <rect width="1200" height="500" fill="#08090a"/>
 
@@ -14,13 +14,12 @@
     <text x="34" y="17" fill="#f4f4f5" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="22" font-weight="700" letter-spacing="2">MCP DETECT</text>
   </g>
 
-  <text x="1136" y="65" text-anchor="end" fill="#9ca0aa" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="15" letter-spacing="1">OPEN SOURCE / REPRODUCIBLE EVIDENCE</text>
+  <text x="1136" y="65" text-anchor="end" fill="#9ca0aa" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="15" letter-spacing="1">OPEN-SOURCE MCP SECURITY RESEARCH</text>
 
-  <g transform="translate(64 155)">
-    <text x="0" y="0" fill="#ef4444" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="17" font-weight="700" letter-spacing="2">MEASURED, NOT MARKETED</text>
-    <text x="0" y="75" fill="#f4f4f5" font-family="Avenir Next,Segoe UI,Helvetica,Arial,sans-serif" font-size="61" font-weight="650">What it catches.</text>
-    <text x="0" y="143" fill="#f4f4f5" font-family="Avenir Next,Segoe UI,Helvetica,Arial,sans-serif" font-size="61" font-weight="650">What it misses.</text>
-    <text x="0" y="190" fill="#9ca0aa" font-family="Avenir Next,Segoe UI,Helvetica,Arial,sans-serif" font-size="23">Reproducible MCP abuse-detection research.</text>
+  <g transform="translate(64 151)">
+    <text x="0" y="76" fill="#f4f4f5" font-family="Avenir Next,Segoe UI,Helvetica,Arial,sans-serif" font-size="58" font-weight="650">Watch the agent work.</text>
+    <text x="0" y="144" fill="#f4f4f5" font-family="Avenir Next,Segoe UI,Helvetica,Arial,sans-serif" font-size="58" font-weight="650">Catch the break in <tspan fill="#ef4444">trust.</tspan></text>
+    <text x="0" y="192" fill="#9ca0aa" font-family="Avenir Next,Segoe UI,Helvetica,Arial,sans-serif" font-size="22">Detection research grounded in recorded benign tool calls.</text>
   </g>
 
   <g transform="translate(958 151)" font-family="ui-monospace,SFMono-Regular,Consolas,monospace">
@@ -31,17 +30,16 @@
     <text x="32" y="16" fill="#f4f4f5" font-size="16">IDENTITY</text>
     <text x="32" y="90" fill="#f4f4f5" font-size="16">HANDLER</text>
     <text x="32" y="164" fill="#f4f4f5" font-size="16">RESOURCE</text>
-    <text x="32" y="195" fill="#737781" font-size="13">TRACE THE BOUNDARY</text>
   </g>
 
   <g transform="translate(64 441)" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="16">
-    <circle cx="7" cy="-5" r="6" fill="#34d399"/>
-    <text x="24" y="0" fill="#f4f4f5">5 bounded techniques</text>
-    <path d="M241 -22V11" stroke="#343841"/>
-    <circle cx="272" cy="-5" r="6" fill="#34d399"/>
-    <text x="289" y="0" fill="#f4f4f5">0 / 4,727 synthetic benign alerts</text>
-    <path d="M621 -22V11" stroke="#343841"/>
-    <circle cx="652" cy="-5" r="6" fill="#ef4444"/>
-    <text x="669" y="0" fill="#f4f4f5">evasions published</text>
+    <circle cx="7" cy="-5" r="6" fill="#ef4444"/>
+    <text x="24" y="0" fill="#f4f4f5">1,011 AI-chosen tool calls</text>
+    <path d="M303 -22V11" stroke="#343841"/>
+    <circle cx="334" cy="-5" r="6" fill="#f4f4f5"/>
+    <text x="351" y="0" fill="#f4f4f5">20 tools / 6 server configs</text>
+    <path d="M667 -22V11" stroke="#343841"/>
+    <circle cx="698" cy="-5" r="6" fill="#34d399"/>
+    <text x="715" y="0" fill="#f4f4f5">0 / 4,727 benign alerts</text>
   </g>
 </svg>
