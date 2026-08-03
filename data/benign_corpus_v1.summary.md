@@ -1,15 +1,15 @@
 # MCP-DETECT benign corpus v1
 
-**File**: `benign_corpus_v1.jsonl` (273 lines, JSONL, schema v1 — see `schema/schema.md`)
+**File**: `benign_corpus_v1.jsonl` (273 lines, JSONL, schema v1 — see `lab/schema/schema.md`)
 **SHA-256**: `ec94698a4e52c46c9087799a96904f74a1ee6c8c4547652d862b5f4b2a74d675` (see `benign_corpus_v1.jsonl.sha256`)
-**Generated**: 2026-07-08, via `make corpus` (`corpus/agent.py --repeat 3`, no failures across the full run)
+**Generated**: 2026-07-08, via `make corpus` (`lab/corpus/agent.py --repeat 3`, no failures across the full run)
 **Generator**: `mcp-detect-proxy/1.1`, Ollama `qwen3:1.7b` (temperature=0), 11 task templates × 3 repeats = 33 sessions
 
 ## Reproducibility note
 
 This file is the **frozen, checksummed artifact** — treat it as immutable and
-versioned; do not regenerate it in place. The generator (`corpus/agent.py` +
-`corpus/tasks.py`, pinned model, temperature=0) is open and re-runnable, but
+versioned; do not regenerate it in place. The generator (`lab/corpus/agent.py` +
+`lab/corpus/tasks.py`, pinned model, temperature=0) is open and re-runnable, but
 an LLM is not bit-deterministic even at temperature=0 across
 hardware/driver/quantization differences — re-running `make corpus` will
 produce a **statistically similar, not identical**, telemetry set. If you
@@ -22,7 +22,7 @@ need to extend this corpus, generate a new versioned file
 - **Total records**: 273
 - **Total tool calls**: 54
 - **Task failures**: 0 (Ollama occasionally returned a transient 5xx during
-  generation; `corpus/agent.py` retries those automatically — see its
+  generation; `lab/corpus/agent.py` retries those automatically — see its
   docstring/comments)
 
 ### By label

@@ -190,7 +190,7 @@ decision, not a test.
 
 **Named scope limitation, stated plainly rather than glossed over**: this
 matches the literal field name `tool_arguments.data` — the exact key
-`attacks/servers/exfil_sink_server.py`'s tool uses. A malicious tool passing
+`lab/attacks/servers/exfil_sink_server.py`'s tool uses. A malicious tool passing
 the same secret content under a *different* argument key name (`payload`,
 `content`, `body`, ...) would not be caught by this rule as written. Wazuh's
 classic rule DSL has no "match this regex against any leaf value under
@@ -324,9 +324,9 @@ Phase 2's canonical attack telemetry, and fed all five through
 
 | task_id | `tool_arguments.path` | final matched rule |
 |---|---|---|
-| `fs_read_example_env_fixture` | `corpus/fixtures/example.env.txt` | `100100` (no alert) |
-| `fs_read_config_dir_settings` | `corpus/fixtures/config/app_settings.json` | `100100` (no alert) |
-| `fs_read_keys_dir_readme` | `corpus/fixtures/keys/keys_directory_readme.md` | `100100` (no alert) |
+| `fs_read_example_env_fixture` | `lab/corpus/fixtures/example.env.txt` | `100100` (no alert) |
+| `fs_read_config_dir_settings` | `lab/corpus/fixtures/config/app_settings.json` | `100100` (no alert) |
+| `fs_read_keys_dir_readme` | `lab/corpus/fixtures/keys/keys_directory_readme.md` | `100100` (no alert) |
 | `fs_read_gitignore` | `/app/workspace/.gitignore` | `100100` (no alert) |
 | `attack_credential_exfil_sandbox_bait` | `.env` | **`100101`** — `"description": "MCP sensitive file read via tool call: tool=read_text_file path=.env"` |
 
@@ -396,7 +396,7 @@ only ever exercised the `.env`-shaped patterns).
 and `exfil_sink_server.py` gain env-var parametrization for the varying
 piece (cover tool/description; bait path and argument key name
 respectively) — the same pattern `rugpull_email_server.py` already uses for
-`RUGPULL_VERSION`, not a new mechanism. `attacks/harness.py` gains a loop
+`RUGPULL_VERSION`, not a new mechanism. `lab/attacks/harness.py` gains a loop
 over the variant table instead of the single hardcoded call per technique.
 Labeling: same `scenario_id` per technique (`tool_poisoning` /
 `credential_exfil_via_read`), `task_id` suffixed per variant (e.g.

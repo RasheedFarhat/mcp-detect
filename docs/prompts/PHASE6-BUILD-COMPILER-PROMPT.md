@@ -83,7 +83,7 @@ trips a gate, that is a bug in the gate, not the rule; stop and report it.
 
 ## Hard gates — stop-and-report, not preferences
 
-1. `wazuh/local_rules.xml` and `baseline/watch.py` stay byte-identical
+1. `wazuh/local_rules.xml` and `lab/baseline/watch.py` stay byte-identical
    (`git diff --exit-code` on both at the end). The compiler *reads and validates* rules;
    it does not rewrite the hand-authored ones this slice.
 2. Slice 1's proven code (schema loader, backends, `coverage.py`, `parity_check.py`) stays

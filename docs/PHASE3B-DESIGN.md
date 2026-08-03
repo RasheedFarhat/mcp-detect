@@ -119,13 +119,13 @@ not smeared across the rule engine.
 
 ## Persistent baseline store
 
-- **Location**: new `baseline/` directory (sibling to `attacks/`, `corpus/`,
-  `proxy/`) — this is infrastructure, not attack-generation or corpus code,
+- **Location**: new `lab/baseline/` directory (sibling to `lab/attacks/`, `lab/corpus/`,
+  `lab/proxy/`) — this is infrastructure, not attack-generation or corpus code,
   and the persistent-comparison pattern named in `docs/PHASE2-DESIGN.md`
   (`(tool_name, server_command) → first-seen hash`) is plausibly reusable for
   a future stateful signal beyond just rug pull, so it gets its own home
-  rather than living inside `attacks/` or `wazuh/`.
-- **Format**: flat JSON file (`baseline/state/rugpull_baseline.json`),
+  rather than living inside `lab/attacks/` or `wazuh/`.
+- **Format**: flat JSON file (`lab/baseline/state/rugpull_baseline.json`),
   keyed by `(tool_name, server_command)` for `tool_description_hash` and by
   `server_command` alone for `server_version_hash` — matching exactly the
   keying `docs/PHASE2-DESIGN.md` already named. Sqlite would be defensible at
@@ -160,7 +160,7 @@ per subsequent record still carrying that same already-flagged value; a
   "timestamp": "2026-07-09T12:00:00Z",
   "drift_field": "tool_description_hash",
   "tool_name": "send_email",
-  "server_command": "python3 attacks/servers/rugpull_email_server.py",
+  "server_command": "python3 lab/attacks/servers/rugpull_email_server.py",
   "baseline_hash": "sha256:...",
   "baseline_first_seen_session_id": "<session A's session_id>",
   "observed_hash": "sha256:...",
@@ -331,7 +331,7 @@ in two trips), one held in reserve.
 
 | technique | rule(s) | status |
 |---|---|---|
-| Rug pull (SAF-T1201) | `100200`/`100201` (new, via `baseline/` watcher) | **Proposed.** Persistent-baseline mechanism, no `timeframe` cap, no FIM alert-shape mismatch. Pending your sign-off before any file is touched. |
+| Rug pull (SAF-T1201) | `100200`/`100201` (new, via `lab/baseline/` watcher) | **Proposed.** Persistent-baseline mechanism, no `timeframe` cap, no FIM alert-shape mismatch. Pending your sign-off before any file is touched. |
 
 ## Open questions for your sign-off
 
@@ -348,9 +348,9 @@ in two trips), one held in reserve.
    stop (matching 3a's original build gate), or include a variant round in
    this same phase's build step (matching how 3a *also* ended up doing a
    variant round, just in a later pass)?
-4. **`baseline/` as a new top-level directory** — reasonable home, or would
+4. **`lab/baseline/` as a new top-level directory** — reasonable home, or would
    you rather this live under `wazuh/` (since its only consumer is Wazuh) or
-   `attacks/` (since rug pull is the only technique using it so far)?
+   `lab/attacks/` (since rug pull is the only technique using it so far)?
 
 Awaiting sign-off before touching `wazuh/local_rules.xml`,
 `wazuh/ossec_localfile.xml`, or any telemetry.
@@ -361,7 +361,7 @@ Awaiting sign-off before touching `wazuh/local_rules.xml`,
 
 - **Q1 (architecture, option 3)** — approved, with the explicit condition
   that the detector's correctness be proven by Python unit tests
-  independent of corpus replay. Done: `baseline/test_watch.py`, 12 tests,
+  independent of corpus replay. Done: `lab/baseline/test_watch.py`, 12 tests,
   covering first-seen/TOFU, idempotent replay, dedup-per-newly-drifted-hash
   (not per record), correct baseline-vs-observed attribution, and
   independent tracking per `(tool_name, server_command)` key. All 12 pass.
@@ -373,7 +373,7 @@ Awaiting sign-off before touching `wazuh/local_rules.xml`,
   instead as three separately-generated, separately-reported drift shapes
   (description-only, version-only, both). Done — see "Three drift shapes"
   below.
-- **Q4 (`baseline/` location)** — approved as a new top-level directory,
+- **Q4 (`lab/baseline/` location)** — approved as a new top-level directory,
   gitignored state file, `--reset` flag implemented.
 - **Q5 (FP-floor honesty)** — no allowlist/re-baseline workflow built this
   round, as instructed. The metrics section below states the weaker claim
@@ -383,7 +383,7 @@ Awaiting sign-off before touching `wazuh/local_rules.xml`,
 
 ### Watcher unit tests — first, per the build gate
 
-`baseline/watch.py` + `baseline/test_watch.py`. 12 tests, all passing,
+`lab/baseline/watch.py` + `lab/baseline/test_watch.py`. 12 tests, all passing,
 covering exactly the four properties Q1 named:
 
 | test class | what it proves |
@@ -394,18 +394,18 @@ covering exactly the four properties Q1 named:
 | `TestIndependentKeys` | different `tool_name`s and different `server_command`s never cross-contaminate each other's baseline or dedup state |
 | `TestIdempotentReplay` | replaying the same file twice from a fresh state produces identical output; replaying against already-persisted state (the real "run the watcher again later" case) is a no-op |
 
-Run: `python3 -m unittest baseline/test_watch.py -v` — 12/12 pass, 0.003s.
+Run: `python3 -m unittest lab/baseline/test_watch.py -v` — 12/12 pass, 0.003s.
 
 ### Three drift shapes — the corpus-replay proof Q3 asked for instead of a variant round
 
-Extended `attacks/servers/rugpull_email_server.py` with two new
+Extended `lab/attacks/servers/rugpull_email_server.py` with two new
 `RUGPULL_VERSION` modes (`pulled_desc_only`, `pulled_version_only`) that hold
 one of the two hash inputs byte-identical to baseline while changing the
 other — isolating the two drift signals `pulled` (the original Phase 2
 mode) always changes together. Generated both as new sessions via
-`attacks/harness.py`'s new `rug_pull_drift_shapes` mode, through the live
+`lab/attacks/harness.py`'s new `rug_pull_drift_shapes` mode, through the live
 proxy, into the canonical `telemetry.jsonl` (schema-valid, confirmed via
-`schema/validate.py`: 890/890 records valid after generation). Real
+`lab/schema/validate.py`: 890/890 records valid after generation). Real
 proxy-computed hashes confirm the intended shapes exactly:
 
 | task_id | `tool_description_hash` | `server_version_hash` |
@@ -417,7 +417,7 @@ proxy-computed hashes confirm the intended shapes exactly:
 
 ### Batch corpus-replay validation
 
-Ran `baseline/watch.py` (fresh state, scratch output, no live-pipeline
+Ran `lab/baseline/watch.py` (fresh state, scratch output, no live-pipeline
 mutation) over: (1) `data/benign_corpus_v2.jsonl` alone (4727 records, 541
 sessions), (2) the full canonical malicious slice alone (266 records: all of
 Phase 2/3a's attacks plus the 2 new rug-pull sessions), (3) both combined
@@ -446,11 +446,11 @@ intended drift shape fires, `v1_baseline` correctly produces zero (it *sets*
 the baseline).
 
 **The 4 unpredicted alerts — a genuine finding, investigated and named, not
-hidden.** `attacks/servers/exfil_sink_server.py` (3a's credential-exfil sink)
+hidden.** `lab/attacks/servers/exfil_sink_server.py` (3a's credential-exfil sink)
 names its `exfiltrate` tool's `inputSchema` property after the
 `EXFIL_ARG_KEY` env var (`data`/`payload`/`content`/`body`/`message` — how
 3a tested rule `100103`'s key-name scope limit), but its `server_command` is
-identical (`python3 attacks/servers/exfil_sink_server.py`, no args) across
+identical (`python3 lab/attacks/servers/exfil_sink_server.py`, no args) across
 every variant — the schema change is invisible on the command line, only
 visible in the tool's actual declared definition. So `tool_description_hash`
 for `(exfiltrate, exfil_sink_server.py)` genuinely, correctly differs
@@ -542,7 +542,7 @@ remains in reserve.
 
 ### Live end-to-end confirmation
 
-Ran `baseline/watch.py --follow` against the live `telemetry.jsonl`
+Ran `lab/baseline/watch.py --follow` against the live `telemetry.jsonl`
 (fresh state) inside the `agent` container. Its startup catch-up pass over
 existing history reproduced the same 8 drift records found in batch
 validation, appended live to `rugpull_alerts.jsonl`, and Wazuh fired all 8
@@ -554,7 +554,7 @@ the live pipeline. The watcher picked it up within the poll interval,
 appended a 9th record, and Wazuh produced a real, fresh alert:
 
 ```json
-{"rule":{"level":12,"id":"100201","description":"MCP rug pull: tool=send_email server=python3 attacks/servers/rugpull_email_server.py field=tool_description_hash baseline=sha256:61b6e28c... observed=sha256:3f6389fe...","mitre":{"id":["T1554"],"tactic":["Persistence"]}},"decoder":{"name":"json"},"location":"/var/log/mcp-detect/rugpull_alerts.jsonl"}
+{"rule":{"level":12,"id":"100201","description":"MCP rug pull: tool=send_email server=python3 lab/attacks/servers/rugpull_email_server.py field=tool_description_hash baseline=sha256:61b6e28c... observed=sha256:3f6389fe...","mitre":{"id":["T1554"],"tactic":["Persistence"]}},"decoder":{"name":"json"},"location":"/var/log/mcp-detect/rugpull_alerts.jsonl"}
 ```
 
 The validation watcher process was stopped afterward (not left running) —
@@ -591,11 +591,11 @@ softer, partial-credit version of that claim to make honestly.
 
 | technique | rule(s) | status |
 |---|---|---|
-| Rug pull (SAF-T1201) | `100200`/`100201` (via `baseline/watch.py`, persistent TOFU baseline) | **Covered.** 4/4 measured recall across all three drift shapes (description-only, version-only, both). 0/4727 FP against the benign corpus — a real but narrower claim than 3a's FP numbers, see above. Zero manager restarts spent beyond the one budgeted install; live end-to-end alert confirmed, not just `logtest`. |
+| Rug pull (SAF-T1201) | `100200`/`100201` (via `lab/baseline/watch.py`, persistent TOFU baseline) | **Covered.** 4/4 measured recall across all three drift shapes (description-only, version-only, both). 0/4727 FP against the benign corpus — a real but narrower claim than 3a's FP numbers, see above. Zero manager restarts spent beyond the one budgeted install; live end-to-end alert confirmed, not just `logtest`. |
 
 `git_show`: no rule in this phase keys on it, consistent with
 `docs/WAZUH-NOTES.md` constraint 1 (unaffected — this phase doesn't touch
 that field at all).
 
-Build complete. `baseline/state/*.json` is gitignored and regenerable
+Build complete. `lab/baseline/state/*.json` is gitignored and regenerable
 (`--reset`); nothing hand-authored needs to be committed there.

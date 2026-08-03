@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Phase 6 migration -- structural backend runner.
 
-Thin reuse of analysis/report.py's real `wazuh-logtest` invocation and
+Thin reuse of lab/analysis/report.py's real `wazuh-logtest` invocation and
 provenance gates -- imported, not reimplemented. The hard gate for this
 migration is explicit: all matching goes through real `wazuh-logtest`; if
 you start writing regex matching in Python to decide whether a rule fires,
 stop. This module never does that -- `run_batch()` below is a direct
-delegation to `analysis/report.py`'s own `run_wazuh_logtest_batch()`.
+delegation to `lab/analysis/report.py`'s own `run_wazuh_logtest_batch()`.
 """
 from __future__ import annotations
 
@@ -14,10 +14,10 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-if str(REPO_ROOT / "analysis") not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT / "analysis"))
+if str(REPO_ROOT / "lab" / "analysis") not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT / "lab" / "analysis"))
 
-import report as report_mod  # noqa: E402 -- analysis/report.py, imported, never duplicated
+import report as report_mod  # noqa: E402 -- lab/analysis/report.py, imported, never duplicated
 
 NO_ALERT_RULE_IDS = {report_mod.NO_ALERT_RULE_ID, "100200"}  # both parents are level-0, no-alert
 

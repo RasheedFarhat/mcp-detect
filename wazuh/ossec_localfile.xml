@@ -18,7 +18,7 @@
 
 <!--
   Phase 3b addition: the rug-pull baseline-drift stream emitted by
-  baseline/watch.py (see docs/PHASE3B-DESIGN.md), NOT the proxy -- a separate
+  lab/baseline/watch.py (see docs/PHASE3B-DESIGN.md), NOT the proxy -- a separate
   file, deliberately, so rule 100200 can key on a field (mcp_drift_marker)
   real telemetry records never have, without needing to touch rule 100100.
 -->

@@ -3,9 +3,9 @@
 Status: **v2 — findings folded in, sign-off-ready.** Revised from the v1
 proposal after an adversarial review (`docs/PHASE6-REVIEW.md`); every
 confirmed finding is folded into the sections below as an actual
-schema/wording change, not a footnote pointing at the review. Still design
+lab/schema/wording change, not a footnote pointing at the review. Still design
 only — no framework code, no `detections/` directory, no dependency
-installed, `wazuh/local_rules.xml` and `baseline/watch.py` untouched.
+installed, `wazuh/local_rules.xml` and `lab/baseline/watch.py` untouched.
 DaC-Pipeline / Sigma compilation remains explicitly out of scope for this
 document (one-line placeholder in Section 1(a)) — that decision is being
 made separately and later, not designed, evaluated, or resolved here.
@@ -20,18 +20,18 @@ reproduce, one citation needed correcting.
 1. **Finding 1 (backend-as-scalar can't express rug pull's two-stage
    pipeline) — confirmed.** `wazuh/local_rules.xml:314-318` (`100200`)
    matches only on `mcp_drift_marker`, a field that exists solely on
-   `baseline/watch.py`'s emitted output (`baseline/watch.py:98`) — never on
+   `lab/baseline/watch.py`'s emitted output (`lab/baseline/watch.py:98`) — never on
    raw wire telemetry (`100200` is a new top-level parent, not a child of
    `100100`, exactly as `wazuh/local_rules.xml:282-296`'s own comment
-   argues). `analysis/evasion_report.py:217-227`
+   argues). `lab/analysis/evasion_report.py:217-227`
    (`run_rugpull_watcher_on_evasion_corpus`) runs `watch_mod.process_record`
    over raw lines first, producing `drift_lines`
-   (`analysis/evasion_report.py:236-237`), which are then fed into a
+   (`lab/analysis/evasion_report.py:236-237`), which are then fed into a
    *separate* `run_wazuh_logtest_batch()` call alongside the canonical
-   inputs (`analysis/evasion_report.py:244-246`). Two chained stages,
+   inputs (`lab/analysis/evasion_report.py:244-246`). Two chained stages,
    confirmed directly in the code, exactly as claimed.
 2. **Finding 2 (Alert join correct in shape, absent from schema) —
-   confirmed.** `analysis/report.py:213-219`'s `normalize_and_join()` has
+   confirmed.** `lab/analysis/report.py:213-219`'s `normalize_and_join()` has
    exactly the `if "session_id" in record: ... elif "drift_session_id" in
    record: ...` chain, producing `primary_session_id` plus `related =
    [record.get("baseline_first_seen_session_id")]` for the drift case. The
@@ -59,13 +59,13 @@ reproduce, one citation needed correcting.
    explicitly included "E1/E2/E3b's actual evasion text," and the
    recommended pilot scope evaluated recall against those same three
    classes — confirmed as the identical corpus by re-reading both passages
-   directly. `corpus/agent.py:29` pins `MODEL = "qwen3:1.7b"`;
+   directly. `lab/corpus/agent.py:29` pins `MODEL = "qwen3:1.7b"`;
    `data/benign_corpus_v2.summary.md:6` confirms that exact model generated
    the entire benign corpus; the v1 design's Tier-2 proposal named "the
    `ollama`/`qwen3:1.7b` stack this project already runs" as the escalation
    judge — same model, confirmed by direct comparison, not assumed.
 5. **Finding 5 (parity oracle: right count, wrong members) — confirmed.**
-   `analysis/report.py:266-275` (`compute_per_rule_fp`) uses
+   `lab/analysis/report.py:266-275` (`compute_per_rule_fp`) uses
    `benign_session_count` (541) as `100102`'s FP denominator and
    `benign_tool_call_count` (1011) for every other content rule — different
    denominators per rule family, confirmed by reading the function body
@@ -96,7 +96,7 @@ Three findings, each already on record, each pointing at a different wall:
    hold.** `docs/PHASE2-DESIGN.md`'s headline finding: "differs from an
    established baseline" has no expression in Wazuh's rule syntax, and its
    one stateful primitive (`frequency`/`timeframe`) hard-caps at ~27.7
-   hours — incompatible with a real rug pull's timescale. `baseline/watch.py`
+   hours — incompatible with a real rug pull's timescale. `lab/baseline/watch.py`
    resolved this by moving statefulness *outside* Wazuh entirely (3b).
 3. **Semantic attacks provably defeat regex, not just theoretically.**
    Phase 5 didn't argue this — it measured it. E1 (keyword-avoiding
@@ -116,7 +116,7 @@ like `days_since_approval: ">30"` and `baseline_deviation: ">2_std_dev"` —
 fields **no stateless Sigma/Wazuh engine can compute from a single log
 line**. The upstream framework's own reference rule silently assumes an
 external stateful pipeline already produced those fields, without ever
-specifying what that pipeline is. `baseline/watch.py` is the answer that
+specifying what that pipeline is. `lab/baseline/watch.py` is the answer that
 rule gestures at but never builds. This isn't a novel problem this project
 invented — it's a real, still-open gap in the field's own reference
 material, which is exactly why a framework that treats "detection" as one
@@ -151,7 +151,7 @@ new rule language.
 (confirmed above).** A single `backend:` field cannot describe a detection
 whose stateful stage emits a derived record that a separate structural
 rule then matches on — and that isn't a hypothetical future case, it's
-what `baseline/watch.py` + `100200`/`100201` already do today. Every
+what `lab/baseline/watch.py` + `100200`/`100201` already do today. Every
 `Detection` therefore declares `backends:` as a list of one or more stages,
 each with its own `logic_ref` and a `consumes`/`emits` pair describing what
 record shape it operates on:
@@ -205,7 +205,7 @@ mitre_atlas_ids: []                 # none published upstream yet -- unverified,
 description: >
   Persistent-baseline drift in a tool's advertised description or a
   server's version, detected against a TOFU baseline maintained outside
-  Wazuh (baseline/watch.py), matched inside Wazuh only on the derived
+  Wazuh (lab/baseline/watch.py), matched inside Wazuh only on the derived
   drift record it emits.
 backends:
   - backend: stateful
@@ -225,7 +225,7 @@ expected_signal:
   fields: ["drift_field", "baseline_hash", "observed_hash"]
 session_key:
   primary_field: drift_session_id
-  related_fields: ["baseline_first_seen_session_id"]   # the dual-key case Finding 2 traced -- both fields land on the derived record baseline/watch.py:98-111 emits
+  related_fields: ["baseline_first_seen_session_id"]   # the dual-key case Finding 2 traced -- both fields land on the derived record lab/baseline/watch.py:98-111 emits
 fixtures:
   attack_corpus: live:telemetry#label=malicious&scenario_id=rug_pull
   canonical_derived_corpus: live:rugpull_alerts   # the already-computed drift records Phase 4 actually measured against -- see the schema-additions note below for why this is a separate fixture key, not a rerun of the stateful stage
@@ -245,13 +245,13 @@ structures that already exist, not new invention:
 - `backends`/`logic_ref` — today, "which Wazuh rule IDs implement this" is
   something you have to read the XML to know, and "does this detection
   need a second stage" is something you have to already know the history
-  of `baseline/watch.py` to realize. A stateful backend entry's `logic_ref`
+  of `lab/baseline/watch.py` to realize. A stateful backend entry's `logic_ref`
   points at a Python class; a semantic backend entry's at a classifier
   config/model identifier; `consumes`/`emits` make the record-shape
   handoff between stages a declared field instead of something only
   legible by reading `wazuh/local_rules.xml`'s inline comments
   (`wazuh/local_rules.xml:280-296`).
-- `session_key` — exactly the shape `analysis/report.py:213-219`'s
+- `session_key` — exactly the shape `lab/analysis/report.py:213-219`'s
   `normalize_and_join()` already computes by hand (`primary_session_id` +
   `related_session_ids`), now a declared field instead of an `if/elif`
   chain that grows a branch per backend. **Stated limit, not a gap to
@@ -261,7 +261,7 @@ structures that already exist, not new invention:
   single canonical session at all) is out of scope for this schema as
   written and would require revisiting the `Alert` shape itself, not just
   adding another `session_key` entry.
-- `fixtures` — exactly what `analysis/report.py`'s hardcoded
+- `fixtures` — exactly what `lab/analysis/report.py`'s hardcoded
   `RULE_TECHNIQUE` dict and `evasion_report.py`'s hardcoded
   `EVASION_CLASSES` dict already encode, by hand, per rule, today. The
   framework's job is making this declarative and enforced, not inventing a
@@ -305,8 +305,8 @@ as an actual schema change, not a footnote:
    Confirmed: `framework/schema.py`'s `parse_detection()` calls
    `json.loads(text)` directly; no `import yaml` anywhere in the codebase
    (confirmed by grep). This project has been stdlib-only throughout (no
-   `requirements.txt`, no third-party imports in `analysis/`, `baseline/`,
-   or `corpus/`) — PyYAML would be the first third-party dependency, for a
+   `requirements.txt`, no third-party imports in `lab/analysis/`, `lab/baseline/`,
+   or `lab/corpus/`) — PyYAML would be the first third-party dependency, for a
    schema small enough not to need one. JSON is a strict subset of YAML
    1.2, so every `detection.yaml` file remains a valid YAML document (a
    real YAML parser would read it identically) while being parseable with
@@ -329,13 +329,13 @@ as an actual schema change, not a footnote:
      container's live `telemetry.jsonl`, filtered. Replaces the earlier
      placeholder `data/telemetry_malicious_slice.jsonl` (no such static
      file exists — the canonical attack corpus has only ever been a live
-     container fetch, exactly as `analysis/report.py`'s own
+     container fetch, exactly as `lab/analysis/report.py`'s own
      `load_inputs()` already did).
    - `"live:rugpull_alerts"` — fetch the agent container's live,
      already-computed `rugpull_alerts.jsonl` as-is. Necessary as its own
      fixture key (`canonical_derived_corpus`, not a rerun of the stateful
      backend entry) because `docs/PHASE4-REPORT.md`'s rug-pull numbers were
-     measured against the production `baseline/watch.py` process's
+     measured against the production `lab/baseline/watch.py` process's
      accumulated output across the full corpus-generation session, not a
      request-scoped recomputation over an isolated slice — re-deriving
      fresh from only the attack-labeled subset risks missing the benign
@@ -361,7 +361,7 @@ designed here** — out of scope for this document by explicit instruction,
 not an oversight, and not folded into any finding or sign-off decision
 below.
 
-**(b) Stateful — generalizing `baseline/watch.py`.** `baseline/watch.py`
+**(b) Stateful — generalizing `lab/baseline/watch.py`.** `lab/baseline/watch.py`
 is already, structurally, one instance of a more general pattern: TOFU
 baseline + drift detection + dedup + emit-a-flag-record-for-Wazuh. The
 generalization is a small interface every stateful detection implements:
@@ -371,10 +371,10 @@ class StatefulDetector(Protocol):
     def process_record(self, record: dict, state: dict) -> list[dict]:
         """Mutates state in place; returns zero or more derived event
         records (schema is detector-specific, same freedom
-        baseline/watch.py's own drift-record schema already has)."""
+        lab/baseline/watch.py's own drift-record schema already has)."""
 ```
 
-`baseline/watch.py`'s existing `process_record` becomes
+`lab/baseline/watch.py`'s existing `process_record` becomes
 `RugPullBaselineDetector.process_record` verbatim — this is a wrapping
 exercise, not a rewrite (Section 3 makes this an explicit, tested
 migration step). A new stateful detection (e.g. a future
@@ -416,8 +416,8 @@ already visible in today's code — see Section 1's `session_key` bullet for
 the stated limit on this generalization (the `Alert` dataclass's
 single-primary-per-record assumption).
 
-One `coverage.py` (successor to `analysis/report.py` +
-`analysis/evasion_report.py`, not a third parallel tool) walks the
+One `coverage.py` (successor to `lab/analysis/report.py` +
+`lab/analysis/evasion_report.py`, not a third parallel tool) walks the
 registry and, for each `Detection`, runs its `backends:` list in declared
 order (a single stage for most detections; a chained pipeline for
 multi-backend ones like rug pull — Section 1's worked example) against
@@ -434,7 +434,7 @@ system" true in practice, not just in a diagram.
 
 **Today**: hand-write Wazuh XML, manually verify `if_sid` chaining,
 manually probe disjointness via ad hoc `wazuh-logtest` runs, manually add
-an entry to `analysis/report.py`'s `RULE_TECHNIQUE` dict and (if evading is
+an entry to `lab/analysis/report.py`'s `RULE_TECHNIQUE` dict and (if evading is
 worth testing) `evasion_report.py`'s `EVASION_CLASSES` dict, manually
 decide where the rule's doc-comment history lives.
 
@@ -474,7 +474,7 @@ design says so plainly rather than mislabel a dynamic check as "static"**
    frozen corpus set (benign + canonical attack + evasion, extensible)
    gets run through the newly compiled ruleset via real `wazuh-logtest`
    (never reimplemented in Python), and the compile step **fails loud** —
-   same posture as `analysis/report.py`'s existing rule-sync gate — unless
+   same posture as `lab/analysis/report.py`'s existing rule-sync gate — unless
    every detection's own registered fixtures still produce the expected
    verdict. Checking "final matched rule id equals the expected one" this
    way satisfies both halves of `docs/WAZUH-NOTES.md`'s sharper standing
@@ -549,7 +549,7 @@ different measurement scripts.
 
 ## 3. Migration of the existing 3 techniques
 
-**The existing rules and `baseline/watch.py` are the regression oracle —
+**The existing rules and `lab/baseline/watch.py` are the regression oracle —
 not a first draft to improve while migrating.** The migration's job is
 packaging, not rewriting.
 
@@ -557,9 +557,9 @@ packaging, not rewriting.
    (`100100`–`100201`) as `Detection` objects whose `logic_ref` points at
    the *exact* existing rule IDs in the *exact* existing
    `wazuh/local_rules.xml` — zero XML changes in this step.
-2. **`baseline/watch.py` → `RugPullBaselineDetector`**: wrap its existing
+2. **`lab/baseline/watch.py` → `RugPullBaselineDetector`**: wrap its existing
    `process_record` behind the `StatefulDetector` interface with no logic
-   changes. Its 12 existing unit tests (`baseline/test_watch.py`) must
+   changes. Its 12 existing unit tests (`lab/baseline/test_watch.py`) must
    still pass unmodified against the wrapped class — the tests are the
    regression oracle for this specific refactor.
 3. **Prove exact parity before calling migration done — the full table,
@@ -570,13 +570,13 @@ packaging, not rewriting.
    per-rule-id tables** in `docs/PHASE4-REPORT.md`/`docs/PHASE5-REPORT.md`
    (or the full rendered report text — both reports are already
    deterministic and timestamp-free by construction,
-   `analysis/report.py:386-391`, so a byte-diff is meaningful), not just
+   `lab/analysis/report.py:386-391`, so a byte-diff is meaningful), not just
    the six flattened summary numbers (12/12, 11/11, 11/11, 3/3, 0/4727 FP,
    10/12 evasions succeeding). **Corrected from v1 per
    `docs/PHASE6-REVIEW.md` Finding 5**: matching only the flattened numbers
-   is a weaker gate than it sounds, because `analysis/report.py`'s actual
+   is a weaker gate than it sounds, because `lab/analysis/report.py`'s actual
    computation (`compute_per_rule_fp`, `compute_scenario_recall`,
-   `analysis/report.py:266-293`) uses a *different denominator per rule
+   `lab/analysis/report.py:266-293`) uses a *different denominator per rule
    family* (`100102`'s FP denominator is `benign_session_count`; every
    other content rule's is `benign_tool_call_count`) and names which
    specific task_id alerted on which specific rule/drift field
@@ -608,7 +608,7 @@ generalizable to any free-text argument), compute cosine similarity
 against two small, explicitly-labeled reference sets:
 
 - **Attack-shaped exemplars**: reused, not invented — the poisoned
-  descriptions already authored in `attacks/servers/poisoned_tool_server.py`
+  descriptions already authored in `lab/attacks/servers/poisoned_tool_server.py`
   and its Phase 3a/5 *non-evasion* variants (the 12 original tool-poisoning
   variants). These already exist as labeled fixtures; the semantic
   backend's reference set is a *read* of data this project already has,
@@ -684,7 +684,7 @@ number imply more diversity than the corpus actually has.
 
 **A fourth caveat, not folded into corpus homogeneity above because it's a
 different failure mode — judge/corpus circularity** (per
-`docs/PHASE6-REVIEW.md` Finding 4b, confirmed above): `corpus/agent.py:29`
+`docs/PHASE6-REVIEW.md` Finding 4b, confirmed above): `lab/corpus/agent.py:29`
 pins `MODEL = "qwen3:1.7b"`, and that exact model generated the entire
 benign corpus (`data/benign_corpus_v2.summary.md:6`) this backend's own
 threshold sweep is measured against. The Tier-2 escalation judge proposed
@@ -780,8 +780,8 @@ from the start.
 1. **`framework/` + `detections/<id>_<name>/` directory layout — confirmed
    as proposed.** `framework/` (compiler, backends, `coverage.py`) and
    `detections/<id>_<name>/` (one dir per detection, mirroring SAF-MCP's
-   own upstream convention), sibling to `attacks/`, `baseline/`,
-   `analysis/`. Mirrors this project's existing top-level layout; nothing
+   own upstream convention), sibling to `lab/attacks/`, `lab/baseline/`,
+   `lab/analysis/`. Mirrors this project's existing top-level layout; nothing
    in the review's findings depended on this being wrong.
 2. **Semantic backend pilot scope — narrow scope (E1/E2/E3b) confirmed,
    gated on the held-out-data fix.** Piloting against a bounded problem

@@ -12,10 +12,10 @@ __pycache__/
 # never commit private keys.
 wazuh/config/wazuh_indexer_ssl_certs/
 
-# Persistent rug-pull baseline store (baseline/watch.py) -- regenerable from
+# Persistent rug-pull baseline store (lab/baseline/watch.py) -- regenerable from
 # telemetry replay, not something to hand-author or commit. Reset with
-# `python3 baseline/watch.py --reset ...`.
-baseline/state/*.json
+# `python3 lab/baseline/watch.py --reset ...`.
+lab/baseline/state/*.json
 
 # Local overrides for docker-compose.yml's credential defaults (see
 # docker-compose.yml's own comment) -- never commit real values here.

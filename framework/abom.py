@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """AI Bill of Materials -- inventory of MCP servers, tools, versions, and
-trust boundaries observed in a telemetry JSONL file (schema/schema.md v1).
+trust boundaries observed in a telemetry JSONL file (lab/schema/schema.md v1).
 
 This is deliberately NOT a Detection: it has no wazuh_rule/stateful backend,
 goes through none of framework/compiler.py's five gates, and is not part of
@@ -10,7 +10,7 @@ telemetry, aggregates, renders -- no live Wazuh stack needed, no rule
 matching, nothing dynamic.
 
 Every field aggregated here (server_command, server_version_hash, tool_name,
-tool_description_hash) already exists in schema/schema.md v1 -- this module
+tool_description_hash) already exists in lab/schema/schema.md v1 -- this module
 adds no new capture surface, only a new aggregation over what the proxy
 already emits. Output is hashes/names/counts, never raw tool_arguments/
 result_summary -- sanitizer-friendly by construction (see
@@ -22,7 +22,7 @@ tools/list response's raw.result.tools (the same field 100102/SAF-T1001's
 own rule reads) is ingested alongside tools/call records, so a tool a
 server advertises but that is never called still appears, with a
 zero call_count and a tool_description_hash computed directly from the
-advertised entry (proxy/hashing.py's tool_description_hash recipe -- the
+advertised entry (lab/proxy/hashing.py's tool_description_hash recipe -- the
 same recipe a tools/call record's own field already used, just computed
 here instead of read off a record that may not exist for an uncalled
 tool). This was a real, disclosed gap in an earlier version of this module
@@ -86,8 +86,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-if str(REPO_ROOT / "proxy") not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT / "proxy"))
+if str(REPO_ROOT / "lab" / "proxy") not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT / "lab" / "proxy"))
 
 from hashing import tool_description_hash as compute_tool_description_hash  # noqa: E402
 from framework.rendering import markdown_text  # noqa: E402
@@ -219,7 +219,7 @@ def build_bom(lines: list[str]) -> dict:
     servers: dict[str, ServerEntry] = {}
     # (session_id, message_id) -> (tool_name, server_command) for a
     # write-capable filesystem call awaiting its response -- responses never
-    # carry tool_name themselves (schema/schema.md: populated only on the
+    # carry tool_name themselves (lab/schema/schema.md: populated only on the
     # tools/call request record), so this is the only way to correlate a
     # call's real outcome back to the tool that produced it.
     pending_write_calls: dict[tuple, tuple[str, str]] = {}
@@ -241,9 +241,9 @@ def build_bom(lines: list[str]) -> dict:
 
         # A tools/list response -- identified the same way 100102/SAF-T1001's
         # own rule reads it (raw.result.tools), not by `method` (null on every
-        # response, per schema/schema.md). Every advertised tool is recorded
+        # response, per lab/schema/schema.md). Every advertised tool is recorded
         # here with a zero-or-observed call count, computing its description
-        # hash directly from the advertised entry (proxy/hashing.py's own
+        # hash directly from the advertised entry (lab/proxy/hashing.py's own
         # tool_description_hash recipe -- byte-identical to what a tools/call
         # record's own tool_description_hash field would carry) -- available
         # even when the tool is never called, unlike that field.

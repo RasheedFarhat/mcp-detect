@@ -19,11 +19,11 @@ actually is. v1's corpus was real and correctly generated; it just wasn't
 ## What v2 changed
 
 **Distribution fix.** After an initial full generation run (`run5`: 240
-sessions, 415 tool calls), `corpus/summarize.py`'s per-tool breakdown showed
+sessions, 415 tool calls), `lab/corpus/summarize.py`'s per-tool breakdown showed
 the same problem at larger scale: `add_observations` (99) and `read_text_file`
 (87) were half the corpus while a dozen other tools sat at the repeat floor
 (10, 10, 10, 10, 10, 5, 3). Two targeted top-up passes followed —
-`corpus/agent.py --task-id X --repeat N` runs against specific under-
+`lab/corpus/agent.py --task-id X --repeat N` runs against specific under-
 represented tools only, not a full regeneration — adding new task templates
 with genuinely new argument values (new paths, timezones, queries, git-branch
 types) rather than just repeating an existing prompt. Merged and
@@ -120,7 +120,7 @@ level up (to diagnosis, not just liveness).
   wants CVE-correlation alerts) means budgeting real disk for its feed cache,
   not just re-flipping the flag.
 - `git_show` needs a supplemental baseline (a different model, or a
-  hand-authored session via `corpus/handauthored.py`) before any detection
+  hand-authored session via `lab/corpus/handauthored.py`) before any detection
   keyed on that literal tool name can claim a trustworthy FP rate.
 - `data/archive/` holds three partial telemetry dumps from the failed
   attempts above (pre-reload-fix, memory-creep, disk-full) as recovery

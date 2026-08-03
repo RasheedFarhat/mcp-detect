@@ -150,7 +150,7 @@ assumed from `docs/WAZUH-NOTES.md`'s prior audit).
 
 ## Hard gates — all held
 
-1. **`wazuh/local_rules.xml` and `baseline/watch.py` byte-identical**:
+1. **`wazuh/local_rules.xml` and `lab/baseline/watch.py` byte-identical**:
    confirmed via `git diff --exit-code` before, during (after every
    dynamic red-team install/remove cycle), and after this entire build —
    never just at the end. The two dynamic gates' red-team rules were
@@ -167,7 +167,7 @@ assumed from `docs/WAZUH-NOTES.md`'s prior audit).
    slice 1 changed.
 3. **All dynamic gates through real `wazuh-logtest`**: gates 2 and 4 both
    delegate to `framework/structural.py`'s `run_batch()`, itself a thin
-   reuse of `analysis/report.py`'s real invocation. Confirmed by grep: no
+   reuse of `lab/analysis/report.py`'s real invocation. Confirmed by grep: no
    `re.search`/`re.match`/`re.finditer` against telemetry content anywhere
    in `framework/compiler.py` or the red-team harness — the only regexes
    in the new code are `parity_check.py`'s (parses markdown report *text*,

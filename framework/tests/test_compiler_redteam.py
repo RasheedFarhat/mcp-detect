@@ -26,7 +26,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(REPO_ROOT))
-sys.path.insert(0, str(REPO_ROOT / "analysis"))
+sys.path.insert(0, str(REPO_ROOT / "lab" / "analysis"))
 
 import report as report_mod  # noqa: E402
 from framework.registry import load_registry  # noqa: E402
@@ -120,7 +120,7 @@ def prove_gate1() -> None:
 
 def prove_gate3() -> None:
     stock = fetch_stock_ruleset()
-    # baseline/watch.py's ORIGINAL drift-marker field, before the rename to
+    # lab/baseline/watch.py's ORIGINAL drift-marker field, before the rename to
     # mcp_drift_marker (wazuh/local_rules.xml:298-312's own history comment)
     original_draft_fields = {"timestamp", "event_type"}
     violations = check_stock_collision(original_draft_fields, stock, candidate_label="100200_original_draft")
@@ -213,7 +213,7 @@ def prove_gate4() -> None:
     true_positive = json.dumps({
         "session_id": "redteam-gate4-isolated", "timestamp": "2026-07-10T00:00:00Z",
         "method": "tools/call", "tool_name": "read_text_file",
-        "server_command": "python3 attacks/servers/exfil_sink_server.py",
+        "server_command": "python3 lab/attacks/servers/exfil_sink_server.py",
         "tool_arguments": {"data": "postgres://evil:evil@host/db"},
         "scenario_id": "redteam", "task_id": "redteam_gate4_isolated", "label": "malicious",
     })

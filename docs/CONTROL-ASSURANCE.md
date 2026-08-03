@@ -55,11 +55,11 @@ appendix remains separate so limitations stay inspectable.
 ## Baseline approval
 
 Rug-pull drift is never auto-approved. After the release diff and provenance
-have been reviewed, copy `baseline/approval.example.json`, name the exact hash
+have been reviewed, copy `lab/baseline/approval.example.json`, name the exact hash
 already observed by the watcher, and run:
 
 ```sh
-python3 baseline/watch.py \
+python3 lab/baseline/watch.py \
   --input telemetry.jsonl \
   --output drift.jsonl \
   --state baseline.json \

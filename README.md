@@ -60,7 +60,7 @@ Run the complete published corpus with:
 make measure-full
 ```
 
-The [reproduction note](REPRO-VERIFICATION.md) defines exactly what this proves
+The [reproduction note](docs/REPRO-VERIFICATION.md) defines exactly what this proves
 and what still requires a live engine.
 
 ## Why this exists
@@ -111,7 +111,7 @@ because a fresh LLM run can be behaviorally similar without being byte-for-byte
 identical.
 
 Read the [corpus summary](data/benign_corpus_v2.summary.md), inspect the
-[agent loop](corpus/agent.py), or review the [task set](corpus/tasks.py).
+[agent loop](lab/corpus/agent.py), or review the [task set](lab/corpus/tasks.py).
 
 ## Architecture and trust boundary
 
@@ -178,7 +178,7 @@ checksummed JSONL ──▶ frozen Wazuh verdicts ──▶ golden rule matches
 - The optional live path recaptures verdicts from Wazuh and checks semantic
   parity with the frozen evidence.
 
-Start with [Reproduction Verification](REPRO-VERIFICATION.md), then inspect the
+Start with [Reproduction Verification](docs/REPRO-VERIFICATION.md), then inspect the
 [full corpus](data/full/attack_corpus_full_v1.summary.md) or the
 [measurement implementation](framework/repro_offline.py).
 
@@ -188,7 +188,7 @@ Start with [Reproduction Verification](REPRO-VERIFICATION.md), then inspect the
 > **Synthetic reference—not customer work.** All tenants, invoices, code, and
 > evidence in this example are fabricated for the repository.
 
-The [cross-tenant authorization reference](samples/reference-mcp-review/README.md)
+The [cross-tenant authorization reference](examples/reference-mcp-review/README.md)
 shows a valid-looking MCP invoice request that crosses a tenant boundary because
 the handler trusts a caller-controlled `tenant_id`. Normal protocol telemetry
 records a legitimate tool call; only the source and trust path reveal that the
@@ -196,16 +196,16 @@ authenticated tenant was ignored.
 
 The reference includes the complete chain:
 
-- [Intentionally vulnerable handler](samples/reference-mcp-review/vulnerable_server.py)
-- [Exact source-level fix](samples/reference-mcp-review/fixed_server.py)
-- [Denied cross-tenant retest](samples/reference-mcp-review/tests/test_authorization.py)
-- [Checksummed evidence manifest](samples/reference-mcp-review/EVIDENCE-MANIFEST.json)
+- [Intentionally vulnerable handler](examples/reference-mcp-review/vulnerable_server.py)
+- [Exact source-level fix](examples/reference-mcp-review/fixed_server.py)
+- [Denied cross-tenant retest](examples/reference-mcp-review/tests/test_authorization.py)
+- [Checksummed evidence manifest](examples/reference-mcp-review/EVIDENCE-MANIFEST.json)
 
 Run it independently:
 
 ```sh
 python3 -m unittest discover \
-  -s samples/reference-mcp-review/tests -p 'test_*.py' -v
+  -s examples/reference-mcp-review/tests -p 'test_*.py' -v
 ```
 
 ## Choose the verification depth
@@ -225,14 +225,11 @@ expose it to an untrusted network or treat it as a production deployment.
 
 | Path | Purpose |
 |---|---|
-| [`proxy/`](proxy/) | Byte-transparent MCP stdio proxy and telemetry capture |
-| [`schema/`](schema/) | JSON Schema and validator for telemetry records |
+| [`lab/`](lab/) | Agent, proxy, schema, corpus generation, attack harnesses, baseline, analysis, and redaction |
+| [`examples/`](examples/) | Synthetic NorthwindPay environment and cross-tenant authorization reference |
 | [`detections/`](detections/) · [`wazuh/`](wazuh/) | Detection definitions and Wazuh rules |
-| [`baseline/`](baseline/) | Stateful trust-on-first-use drift detection |
 | [`framework/`](framework/) | Compiler, registry, coverage, inventory, and verification tools |
-| [`attacks/`](attacks/) · [`corpus/`](corpus/) | Synthetic traffic generators and fixtures |
 | [`data/`](data/) | Sample, benign, evasion, and complete attack corpora |
-| [`samples/reference-mcp-review/`](samples/reference-mcp-review/) | Synthetic authorization defect, exact fix, and denied retest |
 | [`docs/`](docs/) | Design decisions, engine findings, reports, and research history |
 
 </details>
@@ -253,14 +250,14 @@ expose it to an untrusted network or treat it as a production deployment.
 ## Contributing, security, and citation
 
 Contributions should make the evidence stronger, not merely increase a
-coverage count. Read [CONTRIBUTING.md](CONTRIBUTING.md) before proposing a rule,
+coverage count. Read [CONTRIBUTING.md](.github/CONTRIBUTING.md) before proposing a rule,
 fixture, or framework change.
 
 Report vulnerabilities privately through GitHub's
 [security advisory flow](https://github.com/RasheedFarhat/mcp-detect/security/advisories/new),
-following [SECURITY.md](SECURITY.md). For research use, citation metadata is in
+following [SECURITY.md](.github/SECURITY.md). For research use, citation metadata is in
 [`CITATION.cff`](CITATION.cff). Release history is available in
-[`CHANGELOG.md`](CHANGELOG.md) and on the
+[`CHANGELOG.md`](docs/CHANGELOG.md) and on the
 [releases page](https://github.com/RasheedFarhat/mcp-detect/releases).
 
 MCP Detect was created and is maintained by

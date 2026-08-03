@@ -7,7 +7,7 @@ Python reimplementation of rule matching), and diffs the result against
 docs/PHASE4-REPORT.md / docs/PHASE5-REPORT.md member-for-member -- not just
 the six summary numbers.
 
-Deliberately reuses analysis/report.py's and analysis/evasion_report.py's
+Deliberately reuses lab/analysis/report.py's and lab/analysis/evasion_report.py's
 own pure computation functions wherever they are already backend-agnostic
 (compute_scenario_recall, compute_aggregate_fp, cross_check_scenario_task,
 group_final_rules_by_task, targeted_and_other_fired) -- these don't
@@ -21,7 +21,7 @@ is replaced here with a registry-driven equivalent
 `fixtures.benign_denominator` instead.
 
 Per-evasion-class target-rule attribution (which rule(s) a given evasion
-task_id is testing) is reused from analysis/evasion_report.py's
+task_id is testing) is reused from lab/analysis/evasion_report.py's
 EVASION_CLASSES dict (import) where that dict has an entry -- a
 measurement-tool concept it already encodes correctly, the same way v2's
 design doc names it as something the framework generalizes, not reinvents.
@@ -44,7 +44,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
-sys.path.insert(0, str(REPO_ROOT / "analysis"))
+sys.path.insert(0, str(REPO_ROOT / "lab" / "analysis"))
 
 import report as report_mod  # noqa: E402
 import evasion_report as ev_mod  # noqa: E402
@@ -185,7 +185,7 @@ def build_evasion_verdicts(run) -> dict:
 
     Rug pull (SAF-T1201) keeps its own verdict shape -- drift-record-based,
     not task_results-based, since its stateful stage means "did this evade"
-    is really "did baseline/watch.py even emit a drift record" -- and E10 is
+    is really "did lab/baseline/watch.py even emit a drift record" -- and E10 is
     a false-positive control probe (fired/did not fire), not a caught/EVADED
     evasion attempt, same distinction the original hardcoded logic made.
 
@@ -264,7 +264,7 @@ OWASP_MCP_TITLES = {
 }
 
 # MCP08 is addressed by this project as a telemetry CONTROL (the proxy +
-# schema/schema.md), never by a detection rule. Rendered as an explicit note
+# lab/schema/schema.md), never by a detection rule. Rendered as an explicit note
 # so the gap-map does not imply detection coverage that doesn't exist -- the
 # whole point of a gap-map is that the holes are legible.
 OWASP_MCP_NOTES = {

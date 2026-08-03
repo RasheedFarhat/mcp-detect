@@ -8,10 +8,10 @@ verdicts, and checksums under the repository's MIT license.
 
 **Files**:
 - `attack_corpus_full_v1.jsonl` (322 lines, JSONL, schema v1 — see
-  `schema/schema.md`) — every `label=="malicious"` record from the live
+  `lab/schema/schema.md`) — every `label=="malicious"` record from the live
   `telemetry.jsonl` this project's attack harnesses have produced.
 - `rugpull_alerts_full_v1.jsonl` (8 lines) — the corresponding derived
-  drift records from `baseline/watch.py`. **Not schema-v1-conformant by
+  drift records from `lab/baseline/watch.py`. **Not schema-v1-conformant by
   design** (a bespoke derived shape — `mcp_drift_marker` etc. — matched by
   Wazuh rule `100200`/`100201` directly, never validated against
   `schema.json`; same as `docs/STATE-OF-PROJECT.md`'s own description of
@@ -25,8 +25,8 @@ verdicts, and checksums under the repository's MIT license.
 
 **Generated**: 2026-07-11 (frozen from the live stack's `telemetry.jsonl` /
 `rugpull_alerts.jsonl`, produced across this project's development by
-`attacks/harness.py`, `attacks/path_traversal_harness.py`, and
-`baseline/watch.py` against the pinned server set — see `README.md`
+`lab/attacks/harness.py`, `lab/attacks/path_traversal_harness.py`, and
+`lab/baseline/watch.py` against the pinned server set — see `README.md`
 "Pinned versions"). Rule-sync verified before freezing: live manager's
 loaded rule file was byte-identical to committed `wazuh/local_rules.xml`
 (sha256 `1104f282ee5585cd429a12a680e250cff8f4224fa236bb271199fddbc4e1a8d9`)
@@ -35,7 +35,7 @@ at capture time.
 ## Reproducibility note
 
 Same discipline as `data/benign_corpus_v2.jsonl`: **frozen, checksummed,
-immutable** — do not regenerate in place. `attacks/harness.py` and friends
+immutable** — do not regenerate in place. `lab/attacks/harness.py` and friends
 are deterministic scripted clients (not LLM-driven), so a fresh
 regeneration would be *semantically* identical (same task templates, same
 payloads) but not byte-identical (fresh UUIDs, wall-clock timestamps,
@@ -69,7 +69,7 @@ extend this corpus, generate a new versioned file
 
 The last group is a previously-documented, unrelated finding, not a rug-pull
 attack: `docs/PHASE5-REPORT.md`'s "unintended cross-scenario drift" —
-`baseline/watch.py` doesn't know or care what scenario it's watching, and
+`lab/baseline/watch.py` doesn't know or care what scenario it's watching, and
 these credential-exfil sessions happen to reuse a tool identity whose schema
 varies across variants, which the watcher correctly (if incidentally) flags
 as drift. Included here verbatim, not filtered out, for the same reason the
@@ -77,7 +77,7 @@ original report didn't hide it.
 
 ## What this reproduces
 
-This is the exact input `analysis/report.py`'s `load_inputs()` fetches live
+This is the exact input `lab/analysis/report.py`'s `load_inputs()` fetches live
 from the Docker volume (`AGENT_SERVICE`'s `/var/log/mcp-detect/telemetry.jsonl`
 filtered to `label=="malicious"`, plus `rugpull_alerts.jsonl` verbatim) —
 freezing it here is capturing what was already driving every recall/FP

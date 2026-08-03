@@ -1,7 +1,7 @@
 # Phase 5 Design — Adversarial Evasion Testing
 
-Status: **proposal — awaiting review.** No rule, no `baseline/watch.py`, no
-`analysis/report.py`, and no telemetry has been touched. Per the standing
+Status: **proposal — awaiting review.** No rule, no `lab/baseline/watch.py`, no
+`lab/analysis/report.py`, and no telemetry has been touched. Per the standing
 pattern, this is the check-in gate before any attack, measurement, or code
 change.
 
@@ -73,9 +73,9 @@ phase applied to itself:**
   with `100101`), not as a security boundary — but it functions as one now,
   and nothing stops an attacker from naming their exfil tool identically to
   one of those seven strings.
-- `baseline/watch.py` hashes only *advertised metadata*
+- `lab/baseline/watch.py` hashes only *advertised metadata*
   (`{name, description, inputSchema}` / `{server_name, server_version,
-  server_command}`, per `schema/schema.md`'s hash recipe) — a rug pull that
+  server_command}`, per `lab/schema/schema.md`'s hash recipe) — a rug pull that
   changes **only runtime behavior**, never any hashed field, produces zero
   drift and is invisible to this detector by construction. This is a
   sharper, previously-unstated version of the general "any hash change is
@@ -110,7 +110,7 @@ problem one level up.
 | E8 | Chunked/encoded payload — base64-encode the secret before the exfil call, or split it across multiple smaller, individually-innocuous-looking tool calls | literal-string/prefix matching generally |
 | E9 | Read-path evasion for `100101` itself — read the same sensitive content via a path that doesn't end in exactly `.env`/`id_rsa`/`.aws/credentials` (case-insensitive) — a renamed copy, a `.bak` suffix, a symlink | the anchored path-suffix regex |
 
-### Rug pull (`100201` / `baseline/watch.py`)
+### Rug pull (`100201` / `lab/baseline/watch.py`)
 
 | # | class | targets | shape |
 |---|---|---|---|
@@ -144,9 +144,9 @@ evasion sessions are conceptually a different kind of artifact than the
 Proposing a new, separately frozen/committed file — `data/evasion_corpus_v1.jsonl`,
 naming it in the same family as `data/benign_corpus_v2.jsonl` since both
 are committed, versioned fixtures, not live/mutable state — generated once
-via a new `attacks/evasion_harness.py` (or new modes on the existing
-`attacks/harness.py`; open question below). Flagging the exact name/location
-as open, same as `baseline/`'s and `analysis/`'s naming were both open
+via a new `lab/attacks/evasion_harness.py` (or new modes on the existing
+`lab/attacks/harness.py`; open question below). Flagging the exact name/location
+as open, same as `lab/baseline/`'s and `lab/analysis/`'s naming were both open
 questions in their own phases.
 
 **Measurement**: batch `wazuh-logtest` over frozen inputs, the real engine,
@@ -156,16 +156,16 @@ zero live-pipeline mutation — identical discipline to 3a/3b/4. Concretely:
 everything already measured is free every time this phase's own measurement
 runs.
 
-**Reuse `analysis/report.py`'s primitives, don't reimplement them**: the
+**Reuse `lab/analysis/report.py`'s primitives, don't reimplement them**: the
 rule-sync gate (`verify_rule_sync`), the batch runner
 (`run_wazuh_logtest_batch`), and the join/normalization
 (`normalize_and_join`) are exactly what this phase needs too — proposing a
-new `analysis/evasion_report.py` that imports them from `analysis/report.py`
+new `lab/analysis/evasion_report.py` that imports them from `lab/analysis/report.py`
 rather than duplicating the logic. `report.py`'s functions are already pure
 enough to import safely (module-level work only runs under
 `if __name__ == "__main__"`), so this shouldn't require restructuring it —
 but if anything there does need to change to support import, the rule
-after that change is non-negotiable: **re-run `analysis/report.py` and
+after that change is non-negotiable: **re-run `lab/analysis/report.py` and
 diff `docs/PHASE4-REPORT.md` byte-for-byte before Phase 5 is considered
 done.** Reusing Phase 4's code must not silently alter Phase 4's own,
 already-committed output.
@@ -205,7 +205,7 @@ one level removed (self-authored *fixes* instead of self-authored
   NFC normalization (or stripping zero-width characters) before matching
   is a **structural** fix that generalizes to the whole class of
   homoglyph/invisible-character tricks, not just the one specimen
-  authored here. Notably, `proxy/hashing.py` already does NFC normalization
+  authored here. Notably, `lab/proxy/hashing.py` already does NFC normalization
   for a different purpose (hash stability) — the same technique would
   apply here. **Legitimate hardening candidate, if E3 succeeds.**
 - **E5 (tool-name spoofing via the negate-list)**: also a real candidate.
@@ -227,7 +227,7 @@ one level removed (self-authored *fixes* instead of self-authored
   primitive in Wazuh's DSL) rather than add an 8th sibling rule for one
   more observed string. A genuine generalization here would mean moving
   this signal outside Wazuh entirely (an external, `tool_arguments`-shape-
-  agnostic scanner, architecturally similar to how `baseline/watch.py`
+  agnostic scanner, architecturally similar to how `lab/baseline/watch.py`
   moved rug-pull detection outside Wazuh) — that's a real infrastructure
   decision, not a reactive rule edit, and is flagged as an open question
   below rather than decided here.
@@ -262,7 +262,7 @@ one level removed (self-authored *fixes* instead of self-authored
 - **E12 (session-conditional serving)**: whichever way this measures, it's
   **document, not harden** — either it's already caught (TOFU's own
   semantics already generalize here, nothing to fix) or it reveals a real
-  TOFU-model limitation that isn't fixable by tuning `baseline/watch.py`,
+  TOFU-model limitation that isn't fixable by tuning `lab/baseline/watch.py`,
   only by changing the trust model itself (e.g., requiring baseline
   agreement across multiple independent vantage points) — a much bigger
   architectural question than this phase should decide unilaterally.
@@ -282,8 +282,8 @@ report's own conclusion, not just here.
 ## 4. Deliverable + location
 
 **`docs/PHASE5-REPORT.md`**, same generated-file banner convention as
-`docs/PHASE4-REPORT.md`, produced by `analysis/evasion_report.py` (sibling
-to `analysis/report.py`, importing its primitives rather than duplicating
+`docs/PHASE4-REPORT.md`, produced by `lab/analysis/evasion_report.py` (sibling
+to `lab/analysis/report.py`, importing its primitives rather than duplicating
 them). Content, per evasion class: which rule it targeted, whether it
 evaded or was caught, and — for anything that evaded — the harden-or-document
 decision with reasoning, and (if hardened) the full-corpus regression
@@ -297,12 +297,12 @@ phase's success condition, not a defect being reported on this project."*
 ## Open questions for your sign-off
 
 1. **Evasion corpus location/filename** — `data/evasion_corpus_v1.jsonl`
-   (proposed) vs. living under `attacks/` instead, since it's attack-side
+   (proposed) vs. living under `lab/attacks/` instead, since it's attack-side
    data.
 2. **New harness file vs. extending the existing one** —
-   `attacks/evasion_harness.py` (proposed, keeps 3a/3b's original-attack
+   `lab/attacks/evasion_harness.py` (proposed, keeps 3a/3b's original-attack
    harness unmodified and stable) vs. adding more modes to
-   `attacks/harness.py` directly.
+   `lab/attacks/harness.py` directly.
 3. **E5 and E3 pre-approved as legitimate hardening candidates if they
    succeed** — I've reasoned through why both pass the generalization test
    above; want your sign-off on treating them as approved-in-advance
@@ -318,4 +318,4 @@ phase's success condition, not a defect being reported on this project."*
    held in reserve otherwise.
 
 Awaiting sign-off before generating any evasion attack, touching any rule
-or `baseline/watch.py`, or writing anything beyond this document.
+or `lab/baseline/watch.py`, or writing anything beyond this document.

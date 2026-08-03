@@ -106,7 +106,7 @@ siblings. This is the finding behind the second constraint above.
 ## Inherited constraints from Phase 1/2 (consolidated for Phase 3)
 
 Three constraints Phase 3 rule authoring must honor, discovered during
-corpus/attack generation rather than during rule-writing itself — collected
+lab/corpus/attack generation rather than during rule-writing itself — collected
 here, in the document Phase 3 already has to read for the `if_sid`
 constraint above, so none of them get rediscovered mid-authoring. Full
 write-ups live where they were found; this is the pointer, not a

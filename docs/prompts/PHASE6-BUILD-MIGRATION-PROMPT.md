@@ -10,7 +10,7 @@ This session begins the **build**, and it builds exactly one slice: the **migrat
 the three existing techniques into the framework, per the design's Section 3.
 
 The migration's entire reason to exist is stated in the design and is binding here:
-**the existing rules and `baseline/watch.py` are the regression oracle, not a first draft
+**the existing rules and `lab/baseline/watch.py` are the regression oracle, not a first draft
 to improve.** Success is not a new detection. Success is the framework reproducing what
 already works — the frozen Phase 4/5 numbers — *exactly*, member-for-member, through real
 engine execution. If it reproduces them, the abstraction is proven on real ground. If it
@@ -29,12 +29,12 @@ rather than adjust anything to make the numbers match.
   including the rug-pull detection as the two-backend worked example the design already
   spells out.
 - `StatefulDetector` protocol + `RugPullBaselineDetector` that wraps
-  `baseline/watch.py`'s existing `process_record` **verbatim** (import and delegate; do
+  `lab/baseline/watch.py`'s existing `process_record` **verbatim** (import and delegate; do
   not copy-edit its logic).
 - The structural backend runner: batch **real `wazuh-logtest`** over a corpus (never a
   Python reimplementation of rule matching — this is the project's oldest standing rule).
 - The unified `Alert` normalization + the table-driven `session_key` join that replaces
-  `analysis/report.py`'s `if session_id / elif drift_session_id` chain.
+  `lab/analysis/report.py`'s `if session_id / elif drift_session_id` chain.
 - `coverage.py`: walk the registry, run each Detection through its backend(s) against the
   three frozen corpora, and emit the full per-task_id / per-rule-id coverage table.
 
@@ -49,8 +49,8 @@ the DaC-Pipeline path. Scope creep into any of these fails the slice.
 1. **`wazuh/local_rules.xml` stays byte-identical.** Verify with `git diff --exit-code
    wazuh/local_rules.xml` at the end. The migration references these rules; it does not
    touch them.
-2. **`baseline/watch.py` stays byte-identical, and its 12 tests pass unmodified.** Run
-   `baseline/test_watch.py` against the wrapped `RugPullBaselineDetector` and confirm all
+2. **`lab/baseline/watch.py` stays byte-identical, and its 12 tests pass unmodified.** Run
+   `lab/baseline/test_watch.py` against the wrapped `RugPullBaselineDetector` and confirm all
    pass with zero edits to the test file. The tests are this refactor's regression oracle.
 3. **All matching goes through real `wazuh-logtest`.** If you find yourself writing regex
    matching in Python to decide whether a rule fires, stop — that is the one thing this
@@ -80,7 +80,7 @@ prior phase earned trust:
 4. `coverage.py` end to end; then the full parity diff as the final gate.
 
 Respect the design's directory decision: `framework/` (loader, backends, `coverage.py`)
-and `detections/<id>_<name>/` as siblings to `attacks/`, `baseline/`, `analysis/`.
+and `detections/<id>_<name>/` as siblings to `lab/attacks/`, `lab/baseline/`, `lab/analysis/`.
 
 ## Discipline (unchanged, non-negotiable)
 

@@ -157,7 +157,7 @@ services:
   agent:
     build:
       context: .
-      dockerfile: agent/Dockerfile
+      dockerfile: lab/agent/Dockerfile
     hostname: agent
     depends_on:
       - ollama

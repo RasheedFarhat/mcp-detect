@@ -67,7 +67,7 @@ def run_one(test_file: str) -> tuple[str, bool, float, str]:
     t0 = time.time()
     child_env = os.environ.copy()
     existing_pythonpath = child_env.get("PYTHONPATH")
-    child_env["PYTHONPATH"] = str(REPO_ROOT) + (
+    child_env["PYTHONPATH"] = os.pathsep.join((str(REPO_ROOT), str(REPO_ROOT / "lab"))) + (
         os.pathsep + existing_pythonpath if existing_pythonpath else ""
     )
     try:

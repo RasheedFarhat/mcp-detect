@@ -43,7 +43,7 @@ def run_stateful_stage(detection: Detection, raw_lines: list[str], state: dict |
     record per line) and return the derived records it emits, JSON-encoded,
     in emission order. `state` defaults to a fresh empty state per the
     detector's own `empty_state()` -- pass an existing state dict to
-    continue from prior records (matching baseline/watch.py's own TOFU
+    continue from prior records (matching lab/baseline/watch.py's own TOFU
     semantics)."""
     first = detection.backends[0]
     if first.backend != "stateful":

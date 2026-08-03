@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Proves RugPullBaselineDetector is a transparent wrapper by re-running
-baseline/test_watch.py's 12 existing tests, UNMODIFIED, against it.
+lab/baseline/test_watch.py's 12 existing tests, UNMODIFIED, against it.
 
-baseline/test_watch.py's test methods call `process_record` as a bare name
+lab/baseline/test_watch.py's test methods call `process_record` as a bare name
 imported into that module's own namespace (`from watch import ...
 process_record ...`); two of them (TestIdempotentReplay) instead call
 `process_file`, which is watch.py's own function and resolves ITS internal
@@ -10,7 +10,7 @@ process_record ...`); two of them (TestIdempotentReplay) instead call
 test_watch.py's. To route every one of the 12 tests through the wrapper --
 not just the 10 that call `process_record` directly -- this monkeypatches
 both names at runtime, restoring them in a `finally` block. Neither
-baseline/watch.py nor baseline/test_watch.py is edited on disk; both stay
+lab/baseline/watch.py nor lab/baseline/test_watch.py is edited on disk; both stay
 byte-identical (verified separately by this migration's hard gate). The
 wrapper itself always calls a reference to the ORIGINAL process_record
 captured before any patching (framework/stateful.py's
@@ -26,11 +26,11 @@ import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(REPO_ROOT / "baseline"))
+sys.path.insert(0, str(REPO_ROOT / "lab" / "baseline"))
 sys.path.insert(0, str(REPO_ROOT))
 
-import test_watch as test_watch_mod  # noqa: E402 -- baseline/test_watch.py, unmodified
-import watch as watch_mod  # noqa: E402 -- baseline/watch.py, unmodified
+import test_watch as test_watch_mod  # noqa: E402 -- lab/baseline/test_watch.py, unmodified
+import watch as watch_mod  # noqa: E402 -- lab/baseline/watch.py, unmodified
 from framework.stateful import RugPullBaselineDetector  # noqa: E402
 
 _detector = RugPullBaselineDetector()

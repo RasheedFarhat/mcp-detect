@@ -2,8 +2,8 @@
 """Phase 6 migration -- unified Alert normalization + table-driven
 session_key join.
 
-Replaces analysis/report.py's `if "session_id" in record: ... elif
-"drift_session_id" in record: ...` chain (analysis/report.py:213-224) with
+Replaces lab/analysis/report.py's `if "session_id" in record: ... elif
+"drift_session_id" in record: ...` chain (lab/analysis/report.py:213-224) with
 a table built from each registered Detection's own declared `session_key`
 (docs/PHASE6-DESIGN.md Section 1's Finding-2 fix), instead of two literal
 field-name strings hardcoded in the join function itself. On real data the

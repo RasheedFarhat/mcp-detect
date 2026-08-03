@@ -14,7 +14,7 @@ lab state still matches the frozen reports (necessary — if the corpus or
 container state had drifted since Phase 4/5 were generated, a "parity"
 claim against them would be meaningless):
 
-- Re-rendering `analysis/report.py`'s `render_report()` (pure function, no
+- Re-rendering `lab/analysis/report.py`'s `render_report()` (pure function, no
   file write) against the live lab and diffing it in memory against the
   committed `docs/PHASE4-REPORT.md` produced exactly one difference: the
   recorded `wazuh/local_rules.xml` sha256. This is expected, not drift —
@@ -24,7 +24,7 @@ claim against them would be meaningless):
   normalizing that one known, documented difference, the texts are
   byte-identical — every recall/FP number and the worked-example
   reconstruction included.
-- Re-running `analysis/evasion_report.py`'s pure sub-functions (fresh
+- Re-running `lab/analysis/evasion_report.py`'s pure sub-functions (fresh
   watcher run over the evasion corpus, one shared `wazuh-logtest` batch)
   reproduced the exact same 10-of-12 evaded task_id set `docs/PHASE5-REPORT.md`
   records, and 0/4727 benign alerts.
@@ -38,9 +38,9 @@ Per the in-scope list, and no further:
 | File | What it does |
 |---|---|
 | `framework/schema.py` | `Detection`/`BackendEntry`/`SessionKey` dataclasses + loader, parsing `detections/<id>_<name>/detection.yaml` into the v2 `backends:` list + `pipeline` shape. Validates chained pipelines' `emits`→`consumes` handoff at load time. |
-| `framework/stateful.py` | `StatefulDetector` protocol + `RugPullBaselineDetector`, importing and delegating to `baseline/watch.py`'s `process_record` verbatim — no logic copied. |
-| `framework/structural.py` | Thin reuse of `analysis/report.py`'s real `wazuh-logtest` invocation (`verify_rule_sync`, `run_wazuh_logtest_batch`, `fetch_container_file`) — imported, not reimplemented. |
-| `framework/alerts.py` | `Alert` dataclass + table-driven `session_key` join, replacing `analysis/report.py`'s `if session_id / elif drift_session_id` chain with a table built from each registered Detection's own declared `session_key`. |
+| `framework/stateful.py` | `StatefulDetector` protocol + `RugPullBaselineDetector`, importing and delegating to `lab/baseline/watch.py`'s `process_record` verbatim — no logic copied. |
+| `framework/structural.py` | Thin reuse of `lab/analysis/report.py`'s real `wazuh-logtest` invocation (`verify_rule_sync`, `run_wazuh_logtest_batch`, `fetch_container_file`) — imported, not reimplemented. |
+| `framework/alerts.py` | `Alert` dataclass + table-driven `session_key` join, replacing `lab/analysis/report.py`'s `if session_id / elif drift_session_id` chain with a table built from each registered Detection's own declared `session_key`. |
 | `framework/fixtures.py` | Resolves the fixture-reference conventions each `detection.yaml` uses (`#distinct_sessions` / `#tool_call_events` / `#all_records` denominators; `live:telemetry#...` / `live:rugpull_alerts` live-container fetches; `#task_id~=...` evasion filters). New, disclosed below. |
 | `framework/registry.py` | Loads the registry, resolves `logic_ref.python_class` strings to real classes, runs a chained Detection's stateful stage over raw records. |
 | `framework/coverage.py` | Walks the registry, runs the full corpus set through one shared real `wazuh-logtest` batch call, builds the registry-driven coverage table. |
@@ -48,13 +48,13 @@ Per the in-scope list, and no further:
 | `detections/SAF-T1001_tool_poisoning_html_comment/detection.yaml` | Single-backend `wazuh_rule` detection, `logic_ref` → `100102` unchanged. |
 | `detections/SAF-T1502_credential_exfil/detection.yaml` | Two parallel `wazuh_rule` backend entries (`read_hop` → `100101`, `exfil_hop` → `100103`–`100107`), `pipeline: parallel`. |
 | `detections/SAF-T1201_rug_pull_baseline_drift/detection.yaml` | The two-backend worked example: `stateful` (`RugPullBaselineDetector`) → `wazuh_rule` (`100201`), `pipeline: chained`. |
-| `framework/tests/test_rugpull_wrapper_parity.py` | Re-runs `baseline/test_watch.py`'s 12 tests, unmodified, against the wrapper. |
+| `framework/tests/test_rugpull_wrapper_parity.py` | Re-runs `lab/baseline/test_watch.py`'s 12 tests, unmodified, against the wrapper. |
 
 ## Judgment calls made, disclosed rather than silently decided
 
 1. **No PyYAML.** This project has been stdlib-only throughout (confirmed:
-   no `requirements.txt`, no third-party imports anywhere in `analysis/`,
-   `baseline/`, or `corpus/`; PyYAML is not installed in this environment).
+   no `requirements.txt`, no third-party imports anywhere in `lab/analysis/`,
+   `lab/baseline/`, or `lab/corpus/`; PyYAML is not installed in this environment).
    Rather than introduce the project's first third-party dependency for a
    schema this small, `detection.yaml` files are written as valid JSON —
    JSON is a strict subset of YAML 1.2, so they remain valid `.yaml`
@@ -81,21 +81,21 @@ Per the in-scope list, and no further:
 4. **Rug pull's canonical corpus uses the live-fetched `rugpull_alerts.jsonl`
    directly, not a fresh stateful rerun.** `docs/PHASE4-REPORT.md`'s rug-pull
    numbers were measured against the already-materialized output of the
-   production `baseline/watch.py` process running across the full
+   production `lab/baseline/watch.py` process running across the full
    corpus-generation session (not a request-scoped recomputation over just
    the malicious-labeled subset — re-deriving fresh from only
    `malicious_lines` would risk missing the benign baseline-setting records
    that precede real drift in production, which could plausibly change the
-   result). `framework/coverage.py` therefore reuses `analysis/report.py`'s
+   result). `framework/coverage.py` therefore reuses `lab/analysis/report.py`'s
    own `load_inputs()` (already fetches the live, already-computed
    `rugpull_alerts.jsonl`) for the canonical corpora, and only invokes
    `RugPullBaselineDetector` fresh (empty state) for the evasion corpus —
-   exactly matching `analysis/evasion_report.py`'s own methodology. A
+   exactly matching `lab/analysis/evasion_report.py`'s own methodology. A
    hypothetical future "run everything fresh from raw telemetry" coverage
    mode was not what either frozen report measured, and reproducing it
    would require replaying the entire production session's history —
    out of scope for a migration whose job is packaging, not rebuilding.
-5. **Evasion-class target-rule attribution reuses `analysis/evasion_report.py`'s
+5. **Evasion-class target-rule attribution reuses `lab/analysis/evasion_report.py`'s
    own `EVASION_CLASSES`/`TP_TASK_IDS`/`CE_TASK_IDS`/`targeted_and_other_fired`**
    (imported, not duplicated) rather than encoding per-evasion-task-id
    rule targeting into the Detection schema. This is a measurement-tool
@@ -105,7 +105,7 @@ Per the in-scope list, and no further:
 6. **`compute_scenario_recall`, `compute_aggregate_fp`,
    `cross_check_scenario_task`, `group_final_rules_by_task`, and
    `targeted_and_other_fired` are reused directly (imported) from
-   `analysis/report.py` and `analysis/evasion_report.py`**, fed by the
+   `lab/analysis/report.py` and `lab/analysis/evasion_report.py`**, fed by the
    framework's registry-driven joined records. These functions were already
    backend-agnostic (grouping by `scenario_id`/`task_id` from the record
    itself, not from a hardcoded rule-id dict) — reusing them minimizes
@@ -176,8 +176,8 @@ Zero discrepancies across every row above.
 
 1. **`wazuh/local_rules.xml` byte-identical**: `git diff --exit-code
    wazuh/local_rules.xml` — clean.
-2. **`baseline/watch.py` byte-identical**: `git diff --exit-code
-   baseline/watch.py baseline/test_watch.py` — clean. **Its 12 tests pass
+2. **`lab/baseline/watch.py` byte-identical**: `git diff --exit-code
+   lab/baseline/watch.py lab/baseline/test_watch.py` — clean. **Its 12 tests pass
    unmodified against the wrapped `RugPullBaselineDetector`**: all 12,
    including the 2 (`TestIdempotentReplay`) that call `process_file` rather
    than `process_record` directly — proven by capturing the original
@@ -187,7 +187,7 @@ Zero discrepancies across every row above.
    neither file ever touched on disk.
 3. **All matching via real `wazuh-logtest`**: confirmed by inspection —
    `framework/structural.py` is a pure delegation to
-   `analysis/report.py`'s real invocation; no file under `framework/`
+   `lab/analysis/report.py`'s real invocation; no file under `framework/`
    performs regex/field matching against telemetry content (verified by
    grep — the only regexes anywhere in `framework/` are
    `parity_check.py`'s, and those parse markdown report *text*, never

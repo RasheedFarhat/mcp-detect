@@ -25,6 +25,10 @@ REPEAT := 1
 # ElementTree usage, the one thing .venv was guarding against).
 MEASURE_PYTHON := $(shell test -x .venv/bin/python3 && echo .venv/bin/python3 || echo python3)
 
+# Keep the historical top-level module names (baseline, proxy, redaction)
+# importable after consolidating the operational components under lab/.
+export PYTHONPATH := $(CURDIR):$(CURDIR)/lab$(if $(PYTHONPATH),:$(PYTHONPATH))
+
 .PHONY: certs lab-up lab-down lab-clean smoke corpus alerts logs measure measure-full check-sample test test-live verify
 
 certs:
@@ -87,21 +91,21 @@ smoke:
 		mkdir -p $(SANDBOX) && \
 		[ -f $(SANDBOX)/.env ] || printf "DATABASE_URL=postgres://admin:hunter2@localhost:5432/prod\nAPI_KEY=sk-fake-not-a-real-secret-1234567890\n" > $(SANDBOX)/.env && \
 		[ -f $(SANDBOX)/id_rsa ] || printf -- "-----BEGIN OPENSSH PRIVATE KEY-----\nFAKEKEYDATA-NOT-REAL-FOR-MCP-DETECT-SPIKE-ONLY\n-----END OPENSSH PRIVATE KEY-----\n" > $(SANDBOX)/id_rsa && \
-		python3 client/client.py --sensitive-path $(SANDBOX)/.env -- \
-			python3 proxy/proxy.py --log-path $(TELEMETRY_LOG_PATH) \
+		python3 lab/client/client.py --sensitive-path $(SANDBOX)/.env -- \
+			python3 lab/proxy/proxy.py --log-path $(TELEMETRY_LOG_PATH) \
 			--label benign --scenario-id benign --task-id smoke_sensitive_read -- \
 			npx -y @modelcontextprotocol/server-filesystem@$(FS_SERVER_VERSION) $(SANDBOX) \
 	'
 	@echo ""
-	@echo "=== validating full telemetry log against schema/schema.json ==="
-	docker compose exec -T agent python3 schema/validate.py $(TELEMETRY_LOG_PATH)
+	@echo "=== validating full telemetry log against lab/schema/schema.json ==="
+	docker compose exec -T agent python3 lab/schema/validate.py $(TELEMETRY_LOG_PATH)
 
 # Ollama-backed agent, generates the labeled benign corpus. Slow (CPU-only
 # inference) and non-deterministic in the small ways an LLM always is -- see
-# corpus/agent.py's docstring for the reproducibility framing. Pass
+# lab/corpus/agent.py's docstring for the reproducibility framing. Pass
 # TASK_ID=<id> to run a single task, REPEAT=<n> for corpus volume.
 corpus:
-	docker compose exec -T agent python3 corpus/agent.py \
+	docker compose exec -T agent python3 lab/corpus/agent.py \
 		--log-path $(TELEMETRY_LOG_PATH) --scenario-id benign --repeat $(REPEAT) \
 		$(if $(TASK_ID),--task-id $(TASK_ID),)
 
@@ -137,16 +141,16 @@ test-live:
 
 # Guard: the synthetic NorthwindPay artifacts and their raw run must never cite
 # a record/session/server count that disagrees with
-# the committed source corpus (northwindpay/telemetry.jsonl). Stdlib-only, no
-# lab needed. See northwindpay/check_sample_consistency.py (FIX-1).
+# the committed source corpus (examples/northwindpay/telemetry.jsonl). Stdlib-only, no
+# lab needed. See examples/northwindpay/check_sample_consistency.py (FIX-1).
 check-sample:
-	$(MEASURE_PYTHON) northwindpay/check_sample_consistency.py
+	$(MEASURE_PYTHON) examples/northwindpay/check_sample_consistency.py
 
 # Consolidated offline release gate.
 verify: measure measure-full check-sample test
 	$(MEASURE_PYTHON) framework/tests/test_audit_safety.py
-	$(MEASURE_PYTHON) proxy/test_proxy.py
-	$(MEASURE_PYTHON) baseline/test_watch.py
+	$(MEASURE_PYTHON) lab/proxy/test_proxy.py
+	$(MEASURE_PYTHON) lab/baseline/test_watch.py
 	$(MEASURE_PYTHON) framework/tests/test_redaction_secret_survival.py
-	$(MEASURE_PYTHON) samples/reference-mcp-review/verify_manifest.py
-	$(MEASURE_PYTHON) -m unittest discover -s samples/reference-mcp-review/tests -p 'test_*.py'
+	$(MEASURE_PYTHON) examples/reference-mcp-review/verify_manifest.py
+	$(MEASURE_PYTHON) -m unittest discover -s examples/reference-mcp-review/tests -p 'test_*.py'

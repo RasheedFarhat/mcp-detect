@@ -55,7 +55,7 @@ Three artifacts, and no more if the framework's promise is real:
    (`backends`, `session_key: {primary_field, related_fields}`, `fixtures`, `known_gaps`),
    `logic_ref` pointing at the new rule id.
 3. **Attack fixtures** for path traversal — there is no existing corpus for it. Author a
-   small set of traversal variants (in `attacks/`, consistent with the existing attack
+   small set of traversal variants (in `lab/attacks/`, consistent with the existing attack
    harness pattern), generating labeled telemetry the way the existing attacks do. Author
    genuine variants (different depths, different target files, mixed with a leading
    sensitive-suffix case that also trips `100101`), not one specimen — recall measured
@@ -75,7 +75,7 @@ Three artifacts, and no more if the framework's promise is real:
   This is the first time gate 2 faces a genuinely new rule overlapping an existing one; if
   it surfaces a real ordering/shadowing issue, that is a finding to resolve (per
   `docs/WAZUH-NOTES.md`'s if_sid/sibling discipline), not to paper over.
-- Install the updated ruleset into the live manager and confirm `analysis/report.py`'s
+- Install the updated ruleset into the live manager and confirm `lab/analysis/report.py`'s
   rule-sync gate (live == committed) passes before measuring.
 - **Measure with `coverage.py`**, real `wazuh-logtest`, never Python matching.
 
@@ -107,7 +107,7 @@ measurement. This section is the point of the slice.
 
 1. **The existing 10 rules stay byte-identical.** The only change to `wazuh/local_rules.xml`
    is the *additive* new rule block — verify with `git diff` that no existing rule's text
-   changed. `baseline/watch.py` stays byte-identical. (This is the one relaxation from prior
+   changed. `lab/baseline/watch.py` stays byte-identical. (This is the one relaxation from prior
    slices: adding the new rule is expected; touching any existing rule is not.)
 2. **Slice 1 + 2 stay green.** Re-run `framework/tests/` and the parity check at the end;
    the new detection is additive and must not regress them.
@@ -124,7 +124,7 @@ SAF-T1105.
 
 Once measured and all gates hold, commit slice 3 separately from slice 2:
 - Stage the T1105 unit: the new rule in `wazuh/local_rules.xml`, `detections/SAF-T1105_path_traversal/`,
-  the new `attacks/` fixtures, and `docs/PHASE6-T1105-REPORT.md`.
+  the new `lab/attacks/` fixtures, and `docs/PHASE6-T1105-REPORT.md`.
 - Commit message: `feat(detect): SAF-T1105 path traversal -- first framework-native detection, gates auto-enforced`
 - If measurement surfaced anything short of clean (an FP, a disjointness issue, a partial
   recall), do **not** commit a "clean" story — either resolve it properly first or commit
@@ -134,7 +134,7 @@ Once measured and all gates hold, commit slice 3 separately from slice 2:
 ## Deliverable
 
 `detections/SAF-T1105_path_traversal/detection.yaml`, the additive rule in
-`wazuh/local_rules.xml`, the path-traversal attack fixtures under `attacks/`, and
+`wazuh/local_rules.xml`, the path-traversal attack fixtures under `lab/attacks/`, and
 `docs/PHASE6-T1105-REPORT.md` recording: the upstream grounding + MITRE citation, the four
 gate results (with the `100101` disjointness adjudication in full), recall and FP measured
 against the real corpora, the no-regression proof for the existing detections, the honest

@@ -19,7 +19,7 @@ test = ["jsonschema>=4.23,<5"]
 
 # This manifest packages framework/ only -- the reusable Detection-as-Code
 # library and its own tests. It does not attempt to package the rest of
-# this repo (attacks/, analysis/, baseline/, corpus/, proxy/, client/),
+# this repo (lab/attacks/, lab/analysis/, lab/baseline/, lab/corpus/, lab/proxy/, lab/client/),
 # which are lab-generation/measurement scripts run in place inside the
 # `agent` container or via the host .venv, not an installable library.
 [tool.setuptools.packages.find]

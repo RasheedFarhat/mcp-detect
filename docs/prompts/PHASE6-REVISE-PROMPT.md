@@ -13,7 +13,7 @@ Your job this session is to **make the design decision-complete and sign-off-rea
 folding the confirmed findings into it and resolving every in-scope open question inline
 — so that a human's only remaining action is to say "build it." This is still a
 **design-only** session: you will not write framework code, create a `detections/`
-directory, or modify `wazuh/local_rules.xml` or `baseline/watch.py`. The one artifact
+directory, or modify `wazuh/local_rules.xml` or `lab/baseline/watch.py`. The one artifact
 you will produce is a revised design document.
 
 **Scope exclusion, still binding:** DaC-Pipeline / Sigma compilation stays out of scope.
@@ -35,13 +35,13 @@ you actually saw:
 
 1. **Finding 1 (backend-as-scalar can't express rug pull's two-stage pipeline):** confirm
    that `wazuh/local_rules.xml`'s `100200`/`100201` match only on the derived record
-   `baseline/watch.py` emits (via the `mcp_drift_marker` field), never on raw wire
-   telemetry — and that `analysis/evasion_report.py` really does run the watcher and
+   `lab/baseline/watch.py` emits (via the `mcp_drift_marker` field), never on raw wire
+   telemetry — and that `lab/analysis/evasion_report.py` really does run the watcher and
    then `wazuh-logtest` as two chained stages. Cite the actual functions/lines you find,
    not the review's.
 2. **Finding 2 (Alert join correct in shape, absent from schema):** confirm the
    `if session_id / elif drift_session_id` chain and the `primary` + `related` shape
-   really exist in `analysis/report.py`, and that the example `detection.yaml` in the
+   really exist in `lab/analysis/report.py`, and that the example `detection.yaml` in the
    design has no `session_key` block.
 3. **Finding 3.4 (negate-on-absent-field check is dynamic, not static):** confirm from
    `docs/WAZUH-NOTES.md` and the inline history in `wazuh/local_rules.xml` that both
@@ -49,9 +49,9 @@ you actually saw:
    and that nothing in the fixture's JSON shape alone reveals the behavior statically.
 4. **Finding 4a/4b (semantic backend: train/test identity + judge/corpus circularity):**
    confirm the E1/E2/E3b evasion text is proposed as both reference exemplar and pilot
-   eval set, and that `corpus/agent.py` pins the same `qwen3:1.7b` model that generated
+   eval set, and that `lab/corpus/agent.py` pins the same `qwen3:1.7b` model that generated
    the benign corpus and would serve as the Tier-2 judge.
-5. **Finding 5 (parity oracle: right count, wrong members):** confirm `analysis/report.py`
+5. **Finding 5 (parity oracle: right count, wrong members):** confirm `lab/analysis/report.py`
    computes per-rule/per-task_id breakdowns with different denominators per rule family,
    so matching the six flattened summary numbers is a weaker check than matching the full
    table.
@@ -64,7 +64,7 @@ top of your output so the human can see exactly what was checked.
 
 Edit `docs/PHASE6-DESIGN.md` in place (it is uncommitted, so this is safe), folding in
 every **confirmed** finding as a concrete change to the design — not a footnote saying
-"the review noted X," but the actual corrected schema/wording. At minimum:
+"the review noted X," but the actual corrected lab/schema/wording. At minimum:
 
 - **The `Detection` schema's backend field** becomes a list plus an explicit composition
   field describing how a multi-backend detection's runners chain (stateful emits a

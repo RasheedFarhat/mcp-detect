@@ -12,11 +12,11 @@ Apple Silicon, Colima + Docker).
    proven from a genuinely clean state (no volumes, no certs, no containers)
    — `make lab-up` then `make smoke` fired the detection rule on the very
    first real session, no manual intervention.
-2. Schema v1 is documented as an adoptable spec (`schema/schema.md` +
+2. Schema v1 is documented as an adoptable spec (`lab/schema/schema.md` +
    `schema.json`), with `tool_description_hash` and `server_version_hash`
    computed and stable, and `label`/`scenario_id`/`task_id`/`generator`
    fields present. **Verified**: hash stability proven by a self-test
-   (`proxy/hashing.py`) asserting identical hashes across key-order and
+   (`lab/proxy/hashing.py`) asserting identical hashes across key-order and
    Unicode-normalization-form differences; all fields confirmed populated
    correctly end to end via `make smoke` and cross-checked in real Wazuh
    alerts.
@@ -44,7 +44,7 @@ Apple Silicon, Colima + Docker).
   manual intervention and zero lost records — the entire benign corpus
   landed correctly on the first full run after the pre-touch fix, with no
   repeat of Phase 0's dedup/inode gotchas.
-- **Hash canonicalization is genuinely stable.** `proxy/hashing.py`'s
+- **Hash canonicalization is genuinely stable.** `lab/proxy/hashing.py`'s
   self-test (stability under key reordering and NFC-normalization
   differences) caught nothing wrong because the recipe was designed
   correctly the first time — NFC-normalize, then sort-keys/compact-separator/
@@ -74,7 +74,7 @@ Apple Silicon, Colima + Docker).
   EOF`, with no discernible pattern — a retry of the exact same request
   reliably succeeded. Root cause not chased further (it's upstream, in
   `ollama/ollama:0.31.1`'s bundled llama.cpp server, not our code); the
-  practical fix is what's in `corpus/agent.py` now: retry transient 5xx up
+  practical fix is what's in `lab/corpus/agent.py` now: retry transient 5xx up
   to twice with a short backoff, and isolate failures per task so one flaky
   call can't take down an entire corpus run.
 - **A real self-inflicted mistake during this phase: I killed a live,
@@ -91,7 +91,7 @@ Apple Silicon, Colima + Docker).
   snapshot; and run long unattended jobs fully detached
   (`docker compose exec -d`, not a tracked foreground shell) precisely so
   that killing my own tracking process can never affect the real work again.
-- **No timeout on individual MCP tool calls in `corpus/agent.py`.** If a
+- **No timeout on individual MCP tool calls in `lab/corpus/agent.py`.** If a
   wrapped server's tool call genuinely hangs (not just "slow," but actually
   stuck), the agent loop has no way to notice and move on — it will await
   that call forever. Didn't bite this run (the git_log call above eventually
@@ -115,7 +115,7 @@ Apple Silicon, Colima + Docker).
   validation errors you'd expect, which is correct but easy to
   misdiagnose in the moment.** Continuous ingestion means old (schema v0)
   and new (schema v1) records can coexist in the same accumulated file
-  across a schema change mid-testing — `schema/validate.py` correctly flags
+  across a schema change mid-testing — `lab/schema/validate.py` correctly flags
   the old ones as invalid (missing `label`/`scenario_id`/etc.), which looks
   alarming until you remember the file is append-only and spans a schema
   version boundary. Not a bug; just something to remember before panicking

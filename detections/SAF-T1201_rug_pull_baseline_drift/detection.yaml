@@ -6,7 +6,7 @@
   "mitre_attack_ids": ["T1554"],
   "mitre_atlas_ids": [],
   "owasp_mcp": ["MCP03", "MCP04"],
-  "description": "Persistent-baseline drift in a tool's advertised description or a server's version, detected against a TOFU baseline maintained outside Wazuh (baseline/watch.py), matched inside Wazuh only on the derived drift record it emits. The two-backend worked example docs/PHASE6-DESIGN.md Section 1 names -- proof that a single Detection can declare a stateful stage feeding a structural one, not two cooperating detections. Migrated verbatim: baseline/watch.py's process_record wrapped (import + delegate, no logic changes) behind RugPullBaselineDetector; wazuh/local_rules.xml rules 100200/100201 unchanged.",
+  "description": "Persistent-baseline drift in a tool's advertised description or a server's version, detected against a TOFU baseline maintained outside Wazuh (lab/baseline/watch.py), matched inside Wazuh only on the derived drift record it emits. The two-backend worked example docs/PHASE6-DESIGN.md Section 1 names -- proof that a single Detection can declare a stateful stage feeding a structural one, not two cooperating detections. Migrated verbatim: lab/baseline/watch.py's process_record wrapped (import + delegate, no logic changes) behind RugPullBaselineDetector; wazuh/local_rules.xml rules 100200/100201 unchanged.",
   "backends": [
     {
       "backend": "stateful",

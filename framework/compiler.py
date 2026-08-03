@@ -364,7 +364,7 @@ def run_attack_corpus(detection: Detection) -> list[tuple[str, str | None]]:
 
     A chained detection's final (structural) stage matches on a DERIVED
     record, not raw telemetry (rug pull: 100201 only ever matches
-    baseline/watch.py's output, never a raw tools/call) -- for those, use
+    lab/baseline/watch.py's output, never a raw tools/call) -- for those, use
     the already-computed `canonical_derived_corpus` fixture instead of
     `attack_corpus`, exactly the same distinction
     docs/PHASE6-MIGRATION-REPORT.md's disclosed judgment call #4 already

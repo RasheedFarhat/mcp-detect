@@ -8,12 +8,12 @@ description = "Synthetic security fixtures intentionally contain fake secret sha
 paths = [
   '''^\.env\.example$''',
   '''^Makefile$''',
-  '''^attacks/''',
-  '''^corpus/fixtures/''',
+  '''^lab/attacks/''',
+  '''^lab/corpus/fixtures/''',
   '''^data/''',
   '''^framework/tests/''',
-  '''^northwindpay/''',
-  '''^redaction/''',
+  '''^examples/northwindpay/''',
+  '''^lab/redaction/''',
   '''^wazuh/config/''',
 ]
 regexes = [

@@ -99,7 +99,7 @@ real credentials, no real external exfil endpoint.
   on the same SAF-T1001 page: [CyberArk, "Poison Everywhere" (May
   2025)](https://www.cyberark.com/resources/threat-research-blog/poison-everywhere-no-output-from-your-mcp-server-is-safe)
   for the "full-schema poisoning" variant (out of scope here — description-only,
-  not schema/parameter poisoning, keeps this slice tight).
+  not lab/schema/parameter poisoning, keeps this slice tight).
 
 ### Reproduction plan
 
@@ -256,8 +256,8 @@ frozen `data/benign_corpus_v2.jsonl` rather than asserting from memory:
 - **Path-suffix separation, verified**: `grep`'d the actual frozen corpus
   for the real bait paths (`/app/sandbox/.env`, `/app/sandbox/id_rsa`) —
   **zero occurrences**. The only `.env`/`keys`/`credential`-adjacent path
-  anywhere in 4727 records is `corpus/fixtures/example.env.txt`, which by
-  construction (documented in `corpus/fixtures/README.md`, itself verified
+  anywhere in 4727 records is `lab/corpus/fixtures/example.env.txt`, which by
+  construction (documented in `lab/corpus/fixtures/README.md`, itself verified
   against the live rule regex) does **not** match rule 100101 — it ends in
   `.txt`, not `.env`. The near-boundary tasks were specifically designed not
   to touch the anchored suffix; this held.
@@ -482,11 +482,11 @@ probabilistic rarity that needs a large n to be confident about.
 
 ## What happens at build time (not now)
 
-- New code lives alongside the existing pipeline, reusing `proxy/proxy.py`
+- New code lives alongside the existing pipeline, reusing `lab/proxy/proxy.py`
   unmodified — malicious servers are just more stdio MCP servers wrapped by
   the same proxy, `--label malicious` instead of `--label benign`. A
-  deterministic scripted harness (modeled on `corpus/handauthored.py`'s
-  `open_session()`/`run_one()` pattern, not `corpus/agent.py`'s LLM loop —
+  deterministic scripted harness (modeled on `lab/corpus/handauthored.py`'s
+  `open_session()`/`run_one()` pattern, not `lab/corpus/agent.py`'s LLM loop —
   reproducible traces, not model variability) drives all three.
 - Wazuh needs to be **up** for this phase (attacks must be shown firing
   detections), which re-introduces the memory tension Phase 1b resolved by
@@ -530,7 +530,7 @@ errors, no retries. Environment: Wazuh fully up (`wazuh.indexer`/
 `wazuh.dashboard` restarted for this phase), `OLLAMA_KEEP_ALIVE=10m`,
 vulnerability-detection off, confirmed before and after generation — peak
 memory ~3.0GiB/5.77GiB, zero OOM kills, disk steady at 45%. Scripted and
-deterministic (`attacks/harness.py`, modeled on `corpus/handauthored.py` —
+deterministic (`lab/attacks/harness.py`, modeled on `lab/corpus/handauthored.py` —
 no LLM involved), five sessions total, ran in seconds.
 
 ### Canonical telemetry source — one file, no double-count risk

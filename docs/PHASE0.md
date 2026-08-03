@@ -8,10 +8,10 @@ deployment at `/Users/rasheedfarhat/wazuh-docker/single-node`).
 
 1. `make spike` produces a JSONL telemetry log where `initialize`, `tools/list`,
    and the sensitive `tools/call` are all visible as clean structured records
-   matching `schema/schema.json`.
+   matching `lab/schema/schema.json`.
    **Verified**: a clean run produces 7 records (initialize + response,
    `notifications/initialized`, tools/list + response, tools/call + response),
-   all 7 validate against `schema/schema.json` with `schema/validate.py`.
+   all 7 validate against `lab/schema/schema.json` with `lab/schema/validate.py`.
 
 2. The MCP session completes normally through the proxy (transparent forwarding).
    **Verified**: `client.py` exits 0 every run; the filesystem server's own

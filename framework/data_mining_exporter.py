@@ -16,7 +16,7 @@ from pathlib import Path
 # Setup paths
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
-sys.path.insert(0, str(REPO_ROOT / "analysis"))
+sys.path.insert(0, str(REPO_ROOT / "lab" / "analysis"))
 
 from framework.registry import load_registry
 from framework.coverage import run_full_pipeline, build_coverage_table, build_evasion_verdicts
@@ -32,11 +32,11 @@ TECHNIQUE_NAMES = {
 }
 
 HARNESS_MAP = {
-    "SAF-T1001": "attacks/harness.py",
-    "SAF-T1104": "attacks/abs_path_read_harness.py",
-    "SAF-T1105": "attacks/path_traversal_harness.py",
-    "SAF-T1201": "attacks/harness.py",
-    "SAF-T1502": "attacks/harness.py",
+    "SAF-T1001": "lab/attacks/harness.py",
+    "SAF-T1104": "lab/attacks/abs_path_read_harness.py",
+    "SAF-T1105": "lab/attacks/path_traversal_harness.py",
+    "SAF-T1201": "lab/attacks/harness.py",
+    "SAF-T1502": "lab/attacks/harness.py",
 }
 
 VARIANTS_MAP = {

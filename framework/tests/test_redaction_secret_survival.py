@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Proves redaction/redact.py's core promise: DATA MINIMIZATION, not
+"""Proves lab/redaction/redact.py's core promise: DATA MINIMIZATION, not
 blocklist redaction. Two separate claims, both checked here:
 
 1. None of the six credential-shape literals (`DATABASE_URL=`/`API_KEY=`
@@ -11,7 +11,7 @@ blocklist redaction. Two separate claims, both checked here:
    password, an email+SSN pair, a JWT-shaped token, an internal hostname)
    ALSO do not survive -- not because this pass recognizes their shape (it
    doesn't try to; that would be the same open-ended blocklist problem
-   redaction/DESIGN.md explains is unwinnable), but because the field they
+   lab/redaction/DESIGN.md explains is unwinnable), but because the field they
    live in (a tool-call argument other than `path`, or a tool response's
    free-text content) is not on the allowlist at all and is minimized
    regardless of shape -- `TestNonCredentialShapePIIMinimized`. This is the
@@ -21,11 +21,11 @@ Structural fields required for detection/BOM correctness
 (`tool_arguments.path`, `tool_description_hash`, `server_version_hash`,
 `raw.result.tools`/`serverInfo`) are checked as untouched. No live stack
 needed -- pure Python string/JSON processing over the already-committed
-northwindpay/telemetry.jsonl corpus, offline-safe like every other file in
+examples/northwindpay/telemetry.jsonl corpus, offline-safe like every other file in
 this directory.
 
 The literal secret/PII substrings checked here are fixed values planted by
-northwindpay/generate_corpus.py -- hardcoded here deliberately, not
+examples/northwindpay/generate_corpus.py -- hardcoded here deliberately, not
 imported from the generator, so this test independently verifies the
 shipped corpus rather than trusting the generator's own self-consistency.
 
@@ -41,13 +41,14 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(REPO_ROOT))
+sys.path.insert(0, str(REPO_ROOT / "lab"))
 
 from redaction.redact import (GENERIC_CONTENT_PLACEHOLDER, minimize_server_command,
                               minimize_string, redact_lines)  # noqa: E402
 
-CORPUS_PATH = REPO_ROOT / "northwindpay" / "telemetry.jsonl"
+CORPUS_PATH = REPO_ROOT / "examples" / "northwindpay" / "telemetry.jsonl"
 
-# The exact planted six-shape secret literals (northwindpay/generate_corpus.py,
+# The exact planted six-shape secret literals (examples/northwindpay/generate_corpus.py,
 # build_production_ledger()/build_support_ticket_bot()) -- any ONE of these
 # surviving anywhere in the minimized export is a bug.
 PLANTED_SECRET_LITERALS = [
@@ -72,7 +73,7 @@ REQUIRED_SURVIVING_MARKERS = [
 ]
 
 # Planted in build_fs_workspace()'s "legacy system notes" benign read
-# (northwindpay/generate_corpus.py) -- none of these match any of the six
+# (examples/northwindpay/generate_corpus.py) -- none of these match any of the six
 # credential shapes wazuh/local_rules.xml keys on, and none are attacks;
 # they are the kind of real content an actual client's docs legitimately
 # contain. None may survive the minimized export.
@@ -120,7 +121,7 @@ class TestRedactionSecretSurvival(unittest.TestCase):
         """tool_description_hash / server_version_hash must be byte-identical
         before/after -- minimization never touches raw.result.tools/
         serverInfo, the fields these hashes are computed from
-        (redaction/DESIGN.md)."""
+        (lab/redaction/DESIGN.md)."""
         mismatches = 0
         for raw_line, red_line in zip(self.raw_lines, self.redacted_lines):
             raw = json.loads(raw_line)
@@ -136,7 +137,7 @@ class TestRedactionSecretSurvival(unittest.TestCase):
         path string itself -- must never be minimized. This is the one
         argument value that survives in full, a disclosed residual (a path
         can itself embed something like a username -- see
-        redaction/DESIGN.md and the residual-disclosure report)."""
+        lab/redaction/DESIGN.md and the residual-disclosure report)."""
         checked = 0
         for raw_line, red_line in zip(self.raw_lines, self.redacted_lines):
             raw = json.loads(raw_line)
@@ -202,7 +203,7 @@ class TestNonCredentialShapePIIMinimized(unittest.TestCase):
     credential shapes still don't survive minimization, because the field
     they live in isn't on the allowlist at all -- not because this pass
     tries to recognize passwords/PII shapes (it doesn't, deliberately;
-    see redaction/DESIGN.md)."""
+    see lab/redaction/DESIGN.md)."""
 
     @classmethod
     def setUpClass(cls):
@@ -231,12 +232,12 @@ class TestNonCredentialShapePIIMinimized(unittest.TestCase):
                               f"non-credential-shape PII {literal!r} survived minimization")
 
     def test_email_in_path_is_the_one_disclosed_exception(self):
-        """tool_arguments.path IS preserved verbatim by design (redaction/
+        """tool_arguments.path IS preserved verbatim by design (lab/redaction/
         DESIGN.md's disclosed residual) -- this specific email appears in a
         path argument (a per-user backup directory name) and DOES survive,
         deliberately. This is the one planted literal excluded from the
         blanket 'nothing survives' claim above, and it's exactly why
-        redaction/redact.py --report's residual-disclosure pass exists: to
+        lab/redaction/redact.py --report's residual-disclosure pass exists: to
         flag it for manual review, not to hide that it happens."""
         self.assertIn("backups/alex.smith@northwindpay.example/settings.json", self.redacted_text)
 

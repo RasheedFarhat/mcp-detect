@@ -1,4 +1,4 @@
-<!-- GENERATED FILE -- produced by analysis/evasion_report.py. Do not hand-edit; re-run `python3 analysis/evasion_report.py` to update. -->
+<!-- GENERATED FILE -- produced by lab/analysis/evasion_report.py. Do not hand-edit; re-run `python3 lab/analysis/evasion_report.py` to update. -->
 # Phase 5 Report — Adversarial Evasion Testing
 
 ## Provenance
@@ -66,11 +66,11 @@ Each class's own "targeted rule fired?" column checks *only* the rule(s) that sp
 
 **E9 evades its own targeted rule (`100101`) but is not a full bypass of the attack overall** — the *content* signal (`100103`) still fires on the exfil step, since the exfiltrated content is byte-identical to the real `.env`. Defense-in-depth catching what the path-based signal alone would have missed — worth stating precisely rather than either calling this a clean evasion or ignoring the partial result.
 
-## Rug pull (`100201` / `baseline/watch.py`)
+## Rug pull (`100201` / `lab/baseline/watch.py`)
 
-Two-stage measurement: does `baseline/watch.py` emit a drift record at all (the detector's own decision), and if so, does `100201` fire on it (Wazuh's side). Both checked via the real code, not asserted.
+Two-stage measurement: does `lab/baseline/watch.py` emit a drift record at all (the detector's own decision), and if so, does `100201` fire on it (Wazuh's side). Both checked via the real code, not asserted.
 
-| class | baseline/watch.py emitted drift? | 100201 fired? |
+| class | lab/baseline/watch.py emitted drift? | 100201 fired? |
 |---|---|---|
 | `e10_legit_upgrade` | yes | 100201 |
 | `e11_behavior_only` | **no** | n/a -- nothing to fire on |
@@ -84,7 +84,7 @@ Two-stage measurement: does `baseline/watch.py` emit a drift record at all (the 
 
 ### Unintended cross-scenario drift, found in this corpus too (not hidden)
 
-`baseline/watch.py` doesn't know or care what an evasion class is testing — it only sees `(tool_name, server_command)` pairs and their hashes. This corpus reuses `poisoned_tool_server.py` (same tool name, same server command) across E1/E2/E3a/E3b/E4, each with a genuinely different description, and reuses `exfil_sink_server.py`'s `exfiltrate` tool across E6/E7/E8/E9 with a schema that changes between E6 (`msg` key) and the rest (`data` key). Exactly the same class of finding `docs/PHASE4-REPORT.md` already documented for 3a's own variant harness — the rug-pull detector is behaving exactly as designed (real schema drift, correctly detected); it's this corpus's own construction that reuses one server identity across variants with different content, not a new mechanism.
+`lab/baseline/watch.py` doesn't know or care what an evasion class is testing — it only sees `(tool_name, server_command)` pairs and their hashes. This corpus reuses `poisoned_tool_server.py` (same tool name, same server command) across E1/E2/E3a/E3b/E4, each with a genuinely different description, and reuses `exfil_sink_server.py`'s `exfiltrate` tool across E6/E7/E8/E9 with a schema that changes between E6 (`msg` key) and the rest (`data` key). Exactly the same class of finding `docs/PHASE4-REPORT.md` already documented for 3a's own variant harness — the rug-pull detector is behaving exactly as designed (real schema drift, correctly detected); it's this corpus's own construction that reuses one server identity across variants with different content, not a new mechanism.
 
 | task_id | rule(s) fired on the drift record |
 |---|---|
@@ -96,7 +96,7 @@ Two-stage measurement: does `baseline/watch.py` emit a drift record at all (the 
 
 **This does not change any evasion verdict above** — with one now-stale name needing a correction rather than a silent edit: E2/E3b/E4 still evade `100102` (the rule they actually target); E7 still evades `100103`–`107` (the rule it targets). **E3a is the one exception, and for an unrelated reason**: it now shows `100102` in the *targeted*-rule table above because of the E3 hardening applied this round, not because of anything in this cross-scenario table — its appearance here (the rug-pull rule firing on an unrelated tool_poisoning task_id) was already true before the hardening and remains an unrelated artifact of this corpus's construction, exactly like the other four rows. An unrelated rule firing on the same task_id via an unrelated mechanism is not a catch of the evasion being tested — stated explicitly so this table isn't misread as "actually, some of these got caught after all."
 
-**This isn't just an observation that happens to hold — it's structurally guaranteed by how this data is computed, confirmed by reading the actual code path, not just checking today's output.** Every verdict above comes from `targeted_and_other_fired()`, which reads *only* `task_results` — a dict built exclusively from the raw `data/evasion_corpus_v1.jsonl` records' own rule matches. Those raw records never carry the `mcp_drift_marker` field `100200` requires, so they **cannot** match `100200`/`100201` at all, structurally, regardless of what `baseline/watch.py` does downstream. The 5 firings in the table above live entirely in a separate dict, `drift_task_results` — built from the derived drift records on a completely different code path — which `targeted_and_other_fired()` never reads. There is no path by which a `100201` firing could reach a TP/CE verdict; this was true before this table existed, not a filter applied after the fact.
+**This isn't just an observation that happens to hold — it's structurally guaranteed by how this data is computed, confirmed by reading the actual code path, not just checking today's output.** Every verdict above comes from `targeted_and_other_fired()`, which reads *only* `task_results` — a dict built exclusively from the raw `data/evasion_corpus_v1.jsonl` records' own rule matches. Those raw records never carry the `mcp_drift_marker` field `100200` requires, so they **cannot** match `100200`/`100201` at all, structurally, regardless of what `lab/baseline/watch.py` does downstream. The 5 firings in the table above live entirely in a separate dict, `drift_task_results` — built from the derived drift records on a completely different code path — which `targeted_and_other_fired()` never reads. There is no path by which a `100201` firing could reach a TP/CE verdict; this was true before this table existed, not a filter applied after the fact.
 
 ## The recursion, restated for this specific round
 
@@ -104,6 +104,6 @@ Any future hardening validated only against this round's own evasion corpus inhe
 
 ## Deferred infrastructure, named on the record
 
-The only genuine generalization available for E6 (the 6th-argument-key gap) is moving that content-signal check outside Wazuh entirely — an external, `tool_arguments`-shape-agnostic scanner that checks *any* leaf value under `tool_arguments` for secret-shaped content, regardless of key name, architecturally similar to how `baseline/watch.py` already moved rug-pull detection outside Wazuh for the same class of reason (no primitive inside Wazuh's rule DSL expresses it). Not built this round, per your sign-off — named here as the real fix, so the deferral is a decision on record, not a gap that gets silently rediscovered next time.
+The only genuine generalization available for E6 (the 6th-argument-key gap) is moving that content-signal check outside Wazuh entirely — an external, `tool_arguments`-shape-agnostic scanner that checks *any* leaf value under `tool_arguments` for secret-shaped content, regardless of key name, architecturally similar to how `lab/baseline/watch.py` already moved rug-pull detection outside Wazuh for the same class of reason (no primitive inside Wazuh's rule DSL expresses it). Not built this round, per your sign-off — named here as the real fix, so the deferral is a decision on record, not a gap that gets silently rediscovered next time.
 
 **The same external scanner would also close E5**, discovered while proving the negate gate above: E5's tool-name-spoofing gap and E6's key-name gap are symptoms of the same underlying limitation (Wazuh's classic rule DSL can't express "any tool call, any argument key, regardless of tool name" as one condition). A Python scanner checking "does `tool_arguments` have a `path` key matching the sensitive suffix" is a native, trivial absence check with no negate-on-absent-field landmine at all — the exact wall that ruled out fixing E5 inside Wazuh's rule DSL. One piece of deferred infrastructure, not two, closes both gaps.

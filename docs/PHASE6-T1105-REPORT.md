@@ -67,7 +67,7 @@ not new detection work.
    `wazuh_rule` structure (no new schema field, no new pipeline value —
    the schema additions slice 1/2 already made, `parallel`/`chained`, were
    sufficient; this detection needed neither).
-3. **`attacks/path_traversal_harness.py`** — a new, separate file (not
+3. **`lab/attacks/path_traversal_harness.py`** — a new, separate file (not
    editing frozen `harness.py`, following the exact precedent
    `evasion_harness.py` already set), generating 8 genuine variants via
    the real, pinned MCP filesystem server against the real `/app/sandbox`
@@ -280,7 +280,7 @@ engineering judgment optional.
 
 1. **Existing 10 rules byte-identical**: `git diff wazuh/local_rules.xml |
    grep '^-' | grep -v '^---'` returns nothing — the only change is the
-   additive `100108` block. `baseline/watch.py`/`test_watch.py`: `git diff
+   additive `100108` block. `lab/baseline/watch.py`/`test_watch.py`: `git diff
    --exit-code` clean.
 2. **Slices 1 + 2 stay green**: `framework/parity_check.py` passes;
    `framework/tests/test_rugpull_wrapper_parity.py` 12/12;
@@ -315,10 +315,10 @@ evasions is future work, not this slice's.
 
 ## Addendum (maturity pass) — the deferred evasion corpus, closed
 
-Closing the one gap named above: `attacks/path_traversal_evasion_harness.py`
-(+ `attacks/servers/traversal_read_server.py` for the tool-name-spoofing
+Closing the one gap named above: `lab/attacks/path_traversal_evasion_harness.py`
+(+ `lab/attacks/servers/traversal_read_server.py` for the tool-name-spoofing
 class) generated 6 evasion classes against `100108`, following the exact
-`attacks/evasion_harness.py` precedent — a scratch corpus path, never the
+`lab/attacks/evasion_harness.py` precedent — a scratch corpus path, never the
 canonical `telemetry.jsonl`, then appended (154 → 196 records) to the same
 `data/evasion_corpus_v1.jsonl` every other detection's `evasion_corpus`
 fixture already references, rather than inventing a second evasion-corpus

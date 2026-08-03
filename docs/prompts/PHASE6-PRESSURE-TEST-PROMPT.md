@@ -6,7 +6,7 @@ Paste everything below the line into Claude Code, running from the repo root.
 
 You are working in the `mcp-detect` repo. Your job this session is **not** to write
 framework code, create a `detections/` directory, or touch `wazuh/local_rules.xml`
-or `baseline/watch.py`. Your job is to **pressure-test the Phase 6 design before a
+or `lab/baseline/watch.py`. Your job is to **pressure-test the Phase 6 design before a
 single line of it gets built**, because a wrong abstraction locked in now costs the
 whole phase. Treat this as an adversarial design review whose output is a written
 critique, not an implementation.
@@ -27,8 +27,8 @@ the purposes of this review.
 3. `docs/WAZUH-NOTES.md` — the eight hard-won engine constraints the design claims it
    will "make the compiler enforce automatically." You must verify each claim against
    the actual note.
-4. `wazuh/local_rules.xml`, `baseline/watch.py`, `analysis/report.py`,
-   `analysis/evasion_report.py` — the code the framework claims to generalize. The
+4. `wazuh/local_rules.xml`, `lab/baseline/watch.py`, `lab/analysis/report.py`,
+   `lab/analysis/evasion_report.py` — the code the framework claims to generalize. The
    design asserts specific things about these files (e.g. "`report.py`'s hardcoded
    `RULE_TECHNIQUE` dict", "the ad hoc `if session_id / elif drift_session_id` join").
    Confirm those assertions are true of the code as it actually is, not as the design
@@ -56,7 +56,7 @@ Go after the abstraction, not the typos. Specifically:
 1. **Does the `Detection` abstraction actually stay backend-agnostic, or does it leak?**
    The design claims "logic is backend-native and referenced, not reimplemented in a
    universal DSL." Test that claim against the two in-scope backends (structural =
-   Direct Wazuh rules; stateful = generalized `baseline/watch.py`) and the semantic
+   Direct Wazuh rules; stateful = generalized `lab/baseline/watch.py`) and the semantic
    backend. Where does a backend-specific detail (a Wazuh `if_sid` parent, a
    `StatefulDetector`'s state shape, an embedding threshold) have to bleed up into the
    supposedly-neutral metadata object or the unified `Alert`/join layer? Find the first

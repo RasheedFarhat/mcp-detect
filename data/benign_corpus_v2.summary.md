@@ -1,6 +1,6 @@
 # MCP-DETECT benign corpus v2
 
-**File**: `benign_corpus_v2.jsonl` (4727 lines, JSONL, schema v1 — see `schema/schema.md`)
+**File**: `benign_corpus_v2.jsonl` (4727 lines, JSONL, schema v1 — see `lab/schema/schema.md`)
 **SHA-256**: `6800a275518d8eced53c3e0583bede118eac6c71786fdf33cc5c623caa105e41` (see `benign_corpus_v2.jsonl.sha256`)
 **Generated**: 2026-07-08
 **Generator**: `mcp-detect-proxy/1.1`, Ollama `qwen3:1.7b` (temperature=0)
@@ -18,8 +18,8 @@ one.
 ## How this file was built
 
 Unlike v1 (a single `make corpus` pass), v2 was assembled in three passes over
-`corpus/agent.py` + `corpus/tasks.py`, merged with `cat` and re-verified with
-`corpus/summarize.py` after each merge:
+`lab/corpus/agent.py` + `lab/corpus/tasks.py`, merged with `cat` and re-verified with
+`lab/corpus/summarize.py` after each merge:
 
 1. **Full run** (`agent.py`, no `--task-id` filter) — every task template in
    `tasks.py` at its configured `repeat` weight, including the five
@@ -105,7 +105,7 @@ specifically built to clear, not just an aggregate count.
 Distinct whole-argument-set count, and distinct values per individual
 argument key, per tool — this is what proves the benign argument-space has
 real spread rather than being a few near-identical calls repeated. Full
-detail: run `python3 corpus/summarize.py data/benign_corpus_v2.jsonl`.
+detail: run `python3 lab/corpus/summarize.py data/benign_corpus_v2.jsonl`.
 
 Notable spreads: `read_text_file` (14 distinct paths), `fetch` (9 distinct
 URLs), `create_directory` (13 distinct paths), `move_file` (6 distinct
@@ -121,10 +121,10 @@ top-up passes:
 | task_id | sessions | tool calls | path read |
 |---|---|---|---|
 | fs_read_gitignore | 12/12 | 14 | `.gitignore` (+2 malformed-path retries — realistic small-model noise, kept as-is) |
-| fs_read_schema_json | 12/12 | 12 | `schema/schema.json` |
-| fs_read_example_env_fixture | 12/12 | 12 | `corpus/fixtures/example.env.txt` |
-| fs_read_config_dir_settings | 12/12 | 12 | `corpus/fixtures/config/app_settings.json` |
-| fs_read_keys_dir_readme | 12/12 | 12 | `corpus/fixtures/keys/keys_directory_readme.md` |
+| fs_read_schema_json | 12/12 | 12 | `lab/schema/schema.json` |
+| fs_read_example_env_fixture | 12/12 | 12 | `lab/corpus/fixtures/example.env.txt` |
+| fs_read_config_dir_settings | 12/12 | 12 | `lab/corpus/fixtures/config/app_settings.json` |
+| fs_read_keys_dir_readme | 12/12 | 12 | `lab/corpus/fixtures/keys/keys_directory_readme.md` |
 
 ## Limitations
 

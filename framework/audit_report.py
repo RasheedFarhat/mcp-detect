@@ -48,8 +48,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
-if str(REPO_ROOT / "analysis") not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT / "analysis"))
+if str(REPO_ROOT / "lab" / "analysis") not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT / "lab" / "analysis"))
 
 from framework.registry import load_registry, run_stateful_stage  # noqa: E402
 from framework.coverage import OWASP_MCP_TITLES, OWASP_MCP_NOTES, render_owasp_map, render_gaps_report  # noqa: E402
@@ -68,13 +68,13 @@ MAX_TELEMETRY_RECORDS = 1_000_000
 
 # Verdict strings that represent a genuine evasion attempt outcome, versus
 # rug pull's E10 legit-upgrade FP probe (not an evasion attempt at all --
-# analysis/evasion_report.py's own comment: "reported separately and not
+# lab/analysis/evasion_report.py's own comment: "reported separately and not
 # counted here", same discipline followed here).
 CONTROL_VERDICTS = {"fired", "did not fire"}
 
 # SAF-T1201's own known_gap E10 (detections/SAF-T1201_rug_pull_baseline_drift/
 # detection.yaml): legitimate version bumps initially produce the same drift
-# signal as an unapproved change. baseline/watch.py now provides an explicit,
+# signal as an unapproved change. lab/baseline/watch.py now provides an explicit,
 # audited approval workflow for previously observed hashes. Its
 # derived drift record already carries `drift_field` distinguishing WHICH
 # value changed ("tool_description_hash" -- the tool's actual advertised
@@ -82,7 +82,7 @@ CONTROL_VERDICTS = {"fired", "did not fire"}
 # Severity-tiering on that already-emitted field, at render time only, lets a
 # routine version bump surface as a low-severity, non-headline observation
 # instead of an indistinguishable rug-pull alert, without touching
-# baseline/watch.py or wazuh/local_rules.xml's 100201 at all (both still see,
+# lab/baseline/watch.py or wazuh/local_rules.xml's 100201 at all (both still see,
 # and 100201 still fires on, every genuine drift event -- nothing is hidden,
 # only triaged). This does NOT eliminate E10: an attacker who bumps only the
 # version string while a real behavior change hides elsewhere would still

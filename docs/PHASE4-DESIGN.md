@@ -269,16 +269,16 @@ side by side, no forced aggregate.
 
 ## 4. Where it lives + how it runs
 
-**Directory**: proposing a new top-level `analysis/` directory (sibling to
-`attacks/`, `baseline/`, `corpus/`, `proxy/`), matching the established
-one-directory-per-concern pattern (`baseline/` for the persistent-baseline
-detector, `analysis/` for the measurement/reporting layer). Flagging this
-as one of the open questions below rather than assuming, same as `baseline/`
+**Directory**: proposing a new top-level `lab/analysis/` directory (sibling to
+`lab/attacks/`, `lab/baseline/`, `lab/corpus/`, `lab/proxy/`), matching the established
+one-directory-per-concern pattern (`lab/baseline/` for the persistent-baseline
+detector, `lab/analysis/` for the measurement/reporting layer). Flagging this
+as one of the open questions below rather than assuming, same as `lab/baseline/`
 was Q4 in the 3b proposal.
 
 **Run mode: batch, over the frozen/canonical corpus, via a real
 `wazuh-logtest` invocation — not the live stream.** Concretely:
-`analysis/report.py` (a) reads the three committed inputs listed above, (b)
+`lab/analysis/report.py` (a) reads the three committed inputs listed above, (b)
 pipes them through one `docker exec -i wazuh.manager wazuh-logtest` batch
 call (parsing stderr for the final matched rule per line, the same
 mechanism this session's own scratch `parse_logtest.py` used for 3b's
@@ -302,7 +302,7 @@ on what's accumulated in `alerts.json` historically.
 and regenerated (not hand-edited) each time the tool runs, mirroring how
 `data/benign_corpus_v2.jsonl` is a frozen, committed artifact. Flagging the
 exact filename as an open question too, since it could equally live as
-`analysis/REPORT.md` if the report is considered part of that directory's
+`lab/analysis/REPORT.md` if the report is considered part of that directory's
 own concern rather than a `docs/` deliverable alongside the phase design
 docs.
 
@@ -316,7 +316,7 @@ docs.
    later use — like a training/eval corpus — I haven't been told about).
 2. **The join/normalization approach (Section 2)** — resolving the
    `session_id`/`drift_session_id` mismatch entirely inside Phase 4's own
-   code, never touching `wazuh/local_rules.xml` or `baseline/watch.py`'s
+   code, never touching `wazuh/local_rules.xml` or `lab/baseline/watch.py`'s
    emitted schema. Want your sign-off on this specific boundary before
    anything is built, since it's the one place this design has to reconcile
    two already-shipped, independently-justified schemas.
@@ -324,13 +324,13 @@ docs.
    producing one overall precision/recall number. Confirm this is the right
    call, not overcaution; a single stakeholder-facing number is a reasonable
    thing to want and I want to check before ruling it out entirely.
-4. **`analysis/` as a new top-level directory** (Section 4) — reasonable
-   home, same pattern as `baseline/`, or would you rather this live
-   elsewhere (e.g. inside `baseline/` since both are "measurement"
+4. **`lab/analysis/` as a new top-level directory** (Section 4) — reasonable
+   home, same pattern as `lab/baseline/`, or would you rather this live
+   elsewhere (e.g. inside `lab/baseline/` since both are "measurement"
    concerns, or a `reports/`-style split between code and output)?
 5. **Report output location/filename** — `docs/PHASE4-REPORT.md` (alongside
-   the phase design docs) vs. `analysis/REPORT.md` (inside the new
+   the phase design docs) vs. `lab/analysis/REPORT.md` (inside the new
    directory) vs. something else.
 
-Awaiting sign-off before writing `analysis/report.py`, any report output, or
+Awaiting sign-off before writing `lab/analysis/report.py`, any report output, or
 touching any other file.

@@ -10,7 +10,7 @@ scalar, per that document's Finding-2 fix.
 
 **Implementation note, disclosed rather than silently decided**: this
 project has been stdlib-only throughout (no `requirements.txt`, no
-third-party imports anywhere in `analysis/`, `baseline/`, or `corpus/` --
+third-party imports anywhere in `lab/analysis/`, `lab/baseline/`, or `lab/corpus/` --
 confirmed by reading them). PyYAML is not installed in this environment
 and adding it would be the first third-party dependency in the project.
 Rather than install one for a schema this small, `detection.yaml` files are

@@ -56,8 +56,8 @@ an open-ended list.
 
 ## Attack corpus (real telemetry, not hand-crafted)
 
-`attacks/abs_path_read_harness.py` drives the real pinned MCP filesystem server
-through the real proxy/client stack (8 variants, one session each). The server
+`lab/attacks/abs_path_read_harness.py` drives the real pinned MCP filesystem server
+through the real lab/proxy/client stack (8 variants, one session each). The server
 enforces its `/app/sandbox` root and denies every read — irrelevant to the
 detection, which matches the **attempt** (the path argument), exactly as
 SAF-T1105's harness already argued. 6 variants are the real signal

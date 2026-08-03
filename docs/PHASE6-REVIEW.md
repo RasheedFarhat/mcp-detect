@@ -28,19 +28,19 @@ never contains matching logic inline — logic is backend-native and
 referenced, not reimplemented in a universal DSL," with `backend` shown as a
 single scalar field (line 85: `backend: wazuh_rule`).
 
-**What actually breaks this**: `baseline/watch.py`'s rug-pull detector, which
+**What actually breaks this**: `lab/baseline/watch.py`'s rug-pull detector, which
 Section 3 requires this framework to wrap "with no logic changes"
 (`docs/PHASE6-DESIGN.md` line 313), is *not* a one-backend detector today, and
 wrapping it doesn't make it one:
 
-- The stateful half lives in `baseline/watch.py:114-135` (`process_record`),
+- The stateful half lives in `lab/baseline/watch.py:114-135` (`process_record`),
   keyed on `(tool_name, server_command)` / `server_command` and emitting a
   derived JSON record only on genuine drift.
 - The structural half is `wazuh/local_rules.xml:314-328` (`100200`/`100201`),
   which does an ordinary stateless field match — but *only on the derived
-  record `baseline/watch.py` emits*, never on raw wire telemetry. Confirmed by
+  record `lab/baseline/watch.py` emits*, never on raw wire telemetry. Confirmed by
   reading `100200`'s own condition (`mcp_drift_marker` — a field that only
-  exists on `baseline/watch.py`'s output, see `baseline/watch.py:98`) and the
+  exists on `lab/baseline/watch.py`'s output, see `lab/baseline/watch.py:98`) and the
   comment at `wazuh/local_rules.xml:282-296` explaining why it's *not* a
   child of `100100` (the raw-telemetry parent).
 
@@ -54,9 +54,9 @@ value `backend:` takes for this Detection, or how `coverage.py`'s "runs every
 Detection through its backend's batch runner" (line 220-222, singular
 "backend's batch runner") is supposed to chain two runners — first
 `process_record` over raw telemetry, then `wazuh-logtest` over *that
-process's output* — which is exactly what `analysis/evasion_report.py`
+process's output* — which is exactly what `lab/analysis/evasion_report.py`
 already has to do by hand today (`run_rugpull_watcher_on_evasion_corpus()` at
-`analysis/evasion_report.py:217-227`, followed by a separate
+`lab/analysis/evasion_report.py:217-227`, followed by a separate
 `run_wazuh_logtest_batch()` call on its output at line 246). The framework
 doesn't eliminate this two-stage pipeline — it has no field to name it.
 
@@ -79,8 +79,8 @@ metadata" failure mode a clean abstraction is supposed to avoid.
 how a multi-backend Detection's runners chain (e.g. `pipeline: [{backend:
 stateful, emits: derived_record}, {backend: wazuh_rule, consumes:
 derived_record, parent_rule: "100200"}]`). This is not new policy — it's
-naming, as a structural field, a pipeline that `baseline/watch.py` +
-`100200`/`100201` +`analysis/evasion_report.py`'s two-call pattern already
+naming, as a structural field, a pipeline that `lab/baseline/watch.py` +
+`100200`/`100201` +`lab/analysis/evasion_report.py`'s two-call pattern already
 implements today. Doing this now also answers sign-off question 3 below,
 since it's the same fix.
 
@@ -88,20 +88,20 @@ since it's the same fix.
 
 ## Finding 2 — The Alert join generalization is correct in shape, unspecified in schema
 
-**Claim under test** (lines 208-217): replace `analysis/report.py`'s
+**Claim under test** (lines 208-217): replace `lab/analysis/report.py`'s
 `if "session_id" in record: ... elif "drift_session_id" in record: ...` chain
-(confirmed verbatim at `analysis/report.py:213-224`) with a table-driven,
+(confirmed verbatim at `lab/analysis/report.py:213-224`) with a table-driven,
 per-Detection session-key declaration.
 
-**Traced against the real code**: `analysis/report.py`'s
+**Traced against the real code**: `lab/analysis/report.py`'s
 `normalize_and_join()` produces, for a rug-pull drift record,
 `primary_session_id = record["drift_session_id"]` and
 `related_session_ids = [record.get("baseline_first_seen_session_id")]`
-(`analysis/report.py:217-219`). The design's `Alert` dataclass (lines
+(`lab/analysis/report.py:217-219`). The design's `Alert` dataclass (lines
 197-206) already has exactly this shape —
 `primary_session_id: str` plus `related_session_ids: list[str]` — so the
 *data shape* the join needs to produce is a correct generalization: it's
-literally the same two fields `JoinedRecord` (`analysis/report.py:202-207`)
+literally the same two fields `JoinedRecord` (`lab/analysis/report.py:202-207`)
 already has, renamed. This part of the design is sound and I'd say so
 plainly rather than manufacture a complaint.
 
@@ -196,7 +196,7 @@ four are claimed as automatable in `docs/PHASE6-DESIGN.md` section 2).
    doing real work: both historical instances of this landmine
    (`100103`'s first draft, `docs/WAZUH-NOTES.md` lines 69-84 inline
    comment in `wazuh/local_rules.xml:71-84`; and the rejected E5 fix,
-   `docs/PHASE5-REPORT.md` lines 24-25 / `analysis/evasion_report.py`
+   `docs/PHASE5-REPORT.md` lines 24-25 / `lab/analysis/evasion_report.py`
    lines 84-102) were discovered *only* by running the candidate rule
    through real `wazuh-logtest` against the actual fixture and reading the
    verbose trace's final matched rule id. `docs/WAZUH-NOTES.md`'s own
@@ -235,7 +235,7 @@ The design's own words, read together:
 
 - The Tier-1 reference set (lines 344-349): "Attack-shaped exemplars: reused,
   not invented — the poisoned descriptions already authored in
-  `attacks/servers/poisoned_tool_server.py` and its Phase 3a/5 variants (12
+  `lab/attacks/servers/poisoned_tool_server.py` and its Phase 3a/5 variants (12
   tool-poisoning variants, **E1/E2/E3b's actual evasion text**)."
 - The recommended pilot scope (lines 404-411): "pilot this backend narrowly,
   against the three evasions regex structurally cannot close (**E1, E2,
@@ -264,7 +264,7 @@ measuring in the first place.
 
 **4b. Judge/corpus circularity — the same small model both wrote the benign ground truth and would judge the uncertain cases.**
 
-`corpus/agent.py:29` pins `MODEL = "qwen3:1.7b"`, and
+`lab/corpus/agent.py:29` pins `MODEL = "qwen3:1.7b"`, and
 `data/benign_corpus_v2.summary.md:6` confirms the entire benign corpus
 (4,727 records, the same corpus every FP claim including this one's
 threshold sweep is measured against) was generated by that same model. The
@@ -295,20 +295,20 @@ before migration is "done."
 
 Since migration keeps `wazuh/local_rules.xml` byte-identical (design line
 308, "zero XML changes in this step" — confirmed consistent with
-`analysis/report.py`'s `verify_rule_sync()` gate at lines 77-104, which
+`lab/analysis/report.py`'s `verify_rule_sync()` gate at lines 77-104, which
 already fails loud on any drift), the underlying `wazuh-logtest` answers
 themselves can't silently change. The risk is not in the engine's output —
 it's in whether `coverage.py`'s aggregation logic reproduces
-`analysis/report.py`'s aggregation *exactly*, and the flattened list in the
+`lab/analysis/report.py`'s aggregation *exactly*, and the flattened list in the
 design's own success condition is a weaker check than what the current tool
 actually verifies.
 
-Concretely: `analysis/report.py`'s `compute_per_rule_fp()` (lines 266-275)
+Concretely: `lab/analysis/report.py`'s `compute_per_rule_fp()` (lines 266-275)
 and `compute_scenario_recall()` (lines 278-293) don't just produce "0/4727"
 and "3/3" — they produce **per-rule, per-task_id breakdowns** with
 *different denominators per rule family* (`100102`'s FP denominator is
 `benign_session_count` = 541; every other content rule's is
-`benign_tool_call_count` = 1011 — see `analysis/report.py:271-274`), and the
+`benign_tool_call_count` = 1011 — see `lab/analysis/report.py:271-274`), and the
 rug-pull recall table names *which specific task_id* alerted on *which
 specific drift field* (`docs/PHASE4-REPORT.md` lines 53-57). The design's
 stated success condition — match the flattened numbers — would pass a
@@ -325,7 +325,7 @@ the original report.
 **Recommended change**: the migration's parity oracle should diff the
 *full* per-task_id, per-rule-id table (or the full rendered report text,
 ignoring only non-deterministic fields — there are none, per
-`analysis/report.py:386-391`'s explicit no-timestamp design), not just the
+`lab/analysis/report.py:386-391`'s explicit no-timestamp design), not just the
 six summary numbers named in the design doc. This is cheap to get right
 (the reports are already deterministic and diff-friendly by construction)
 and meaningfully stronger.
@@ -338,7 +338,7 @@ and meaningfully stronger.
 Yes, confirm as proposed. It mirrors SAF-MCP's own upstream per-technique
 directory convention (per the design's own stated rationale, line 476), is
 consistent with this project's existing top-level layout
-(`attacks/`, `baseline/`, `analysis/` as siblings — confirmed via
+(`lab/attacks/`, `lab/baseline/`, `lab/analysis/` as siblings — confirmed via
 `docs/STATE-OF-PROJECT.md` lines 102-116), and nothing in the findings above
 depends on this layout being wrong. No changes needed here.
 

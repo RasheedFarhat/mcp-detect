@@ -39,7 +39,7 @@ engine right now -- that remains framework/parity_check.py's job
 Offline replay is pinned to a specific wazuh/local_rules.xml sha256, and
 self-invalidates when the rules drift: every `.golden_matches.json` stamps
 the rule_sha256 it was captured against (same discipline
-analysis/report.py's own verify_rule_sync() already uses), and
+lab/analysis/report.py's own verify_rule_sync() already uses), and
 build_run() refuses to replay -- loud RuntimeError, not a silently stale
 pass -- if that sha no longer matches the currently committed rule file.
 See framework/tests/test_repro_offline_stale_rules.py.
@@ -59,7 +59,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
-sys.path.insert(0, str(REPO_ROOT / "analysis"))
+sys.path.insert(0, str(REPO_ROOT / "lab" / "analysis"))
 
 import report as report_mod  # noqa: E402
 
@@ -154,7 +154,7 @@ def _verify_golden_rule_sha(golden: dict, golden_path: Path, current_sha: str) -
     doesn't match the rules being checked against right now. A golden file
     is a snapshot of what wazuh-logtest said about a specific, named rule
     set (--capture-golden always stamps the sha it ran against, mirroring
-    analysis/report.py's own verify_rule_sync() discipline) -- if the rules
+    lab/analysis/report.py's own verify_rule_sync() discipline) -- if the rules
     have since changed, replaying it would report numbers for a rule set
     that no longer exists, silently. Loud failure, not a stale pass."""
     golden_sha = golden.get("rule_sha256")
